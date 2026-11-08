@@ -9,6 +9,7 @@ import ListViewIcon from '../../../assets/icons/list-view.svg';
 import MapViewIcon from '../../../assets/icons/tab-map-active.svg';
 import type { MasterCardDto } from '../../../api';
 import { makeStyles, useTheme } from '../../../theme';
+import { countMasters } from '../searchFilters';
 import { MASTER_CARD_WIDTH, MasterCard } from './MasterCard';
 
 const CARD_GAP = 12;
@@ -103,7 +104,7 @@ export const MastersSheet = forwardRef<MastersSheetRef, MastersSheetProps>(funct
           <Text style={styles.title} numberOfLines={1}>
             Masters nearby
           </Text>
-          {!loading && <Text style={styles.count}>({masters.length} found)</Text>}
+          {!loading && <Text style={styles.count}>({countMasters(masters)} found)</Text>}
           {loading && masters.length > 0 && <ActivityIndicator size="small" color={colors.textSecondary} />}
         </View>
         <Pressable onPress={onToggleListMode} accessibilityRole="button" hitSlop={8} style={styles.viewToggle}>
@@ -116,7 +117,7 @@ export const MastersSheet = forwardRef<MastersSheetRef, MastersSheetProps>(funct
         <FlatList
           key="grid"
           data={masters}
-          keyExtractor={m => String(m.id)}
+          keyExtractor={m => m.pinId}
           renderItem={renderCard}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
@@ -129,7 +130,7 @@ export const MastersSheet = forwardRef<MastersSheetRef, MastersSheetProps>(funct
           key="carousel"
           ref={carouselRef}
           data={masters}
-          keyExtractor={m => String(m.id)}
+          keyExtractor={m => m.pinId}
           renderItem={renderCard}
           horizontal
           showsHorizontalScrollIndicator={false}

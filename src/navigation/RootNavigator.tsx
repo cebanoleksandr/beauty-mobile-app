@@ -3,6 +3,8 @@ import { DarkTheme, NavigationContainer, type Theme as NavTheme } from '@react-n
 import { createNativeStackNavigator, type NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useIsSignedIn } from '../auth';
 import { LoginScreen } from '../features/auth/LoginScreen';
+import { BookingScreen } from '../features/booking/BookingScreen';
+import { MasterProfileScreen } from '../features/master-profile/MasterProfileScreen';
 import { RoleSelectScreen } from '../features/onboarding/RoleSelectScreen';
 import { useTheme } from '../theme';
 import { MainTabs } from './MainTabs';
@@ -12,6 +14,30 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function RoleSelectRoute({ navigation }: NativeStackScreenProps<RootStackParamList, 'RoleSelect'>) {
   return <RoleSelectScreen onCompleted={() => navigation.replace('Main', { screen: 'Discover' })} />;
+}
+
+function MasterProfileRoute({ navigation, route }: NativeStackScreenProps<RootStackParamList, 'MasterProfile'>) {
+  return (
+    <MasterProfileScreen
+      masterId={route.params.masterId}
+      preview={route.params.preview}
+      onBack={() => navigation.goBack()}
+      onBook={(master, service) =>
+        navigation.navigate('Booking', { masterId: master.id, serviceId: service?.id })
+      }
+    />
+  );
+}
+
+function BookingRoute({ navigation, route }: NativeStackScreenProps<RootStackParamList, 'Booking'>) {
+  return (
+    <BookingScreen
+      masterId={route.params.masterId}
+      initialServiceId={route.params.serviceId}
+      onBack={() => navigation.goBack()}
+      onOpenBookings={() => navigation.popTo('Main', { screen: 'Bookings' })}
+    />
+  );
 }
 
 /**
@@ -44,6 +70,8 @@ export function RootNavigator() {
           <>
             <Stack.Screen name="RoleSelect" component={RoleSelectRoute} />
             <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="MasterProfile" component={MasterProfileRoute} />
+            <Stack.Screen name="Booking" component={BookingRoute} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} options={{ animationTypeForReplace: 'pop' }} />

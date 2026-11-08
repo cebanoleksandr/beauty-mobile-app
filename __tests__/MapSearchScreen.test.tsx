@@ -36,13 +36,24 @@ const masters: MasterCardDto[] = [
   },
 ];
 
-const searchBodies: unknown[] = [];
+const catalog = [
+  {
+    id: 'cat-nails',
+    name: { en: 'Nails', uk: 'Нігті' },
+    definitions: [
+      { id: 'svc-gel', name: { en: 'Gel manicure', uk: 'Гель-лак' } },
+      { id: 'svc-pedi', name: { en: 'Pedicure', uk: 'Педикюр' } },
+    ],
+  },
+];
+
+const searchBodies: Record<string, unknown>[] = [];
 
 beforeEach(() => {
   searchBodies.length = 0;
   globalThis.fetch = jest.fn(async (url: string, init?: RequestInit) => {
     if (url.endsWith('/api/masters/search')) searchBodies.push(JSON.parse(String(init?.body)));
-    const body = url.endsWith('/api/masters/search') ? masters : [];
+    const body = url.endsWith('/api/masters/search') ? masters : url.endsWith('/api/catalog') ? catalog : [];
     return { ok: true, status: 200, text: async () => JSON.stringify(body) } as Response;
   }) as unknown as typeof fetch;
 });
@@ -107,5 +118,46 @@ test('bookmark toggles a favorite', async () => {
   expect(removeButtons.length).toBeGreaterThanOrEqual(1);
   // Clean up the shared store for other tests.
   await act(async () => removeButtons[0].props.onPress());
+  await act(async () => tree.unmount());
+});
+
+const pressable = (tree: ReactTestRenderer.ReactTestRenderer, match: (props: any) => boolean) =>
+  tree.root.findAll(n => typeof n.props.onPress === 'function' && match(n.props))[0];
+
+const hasText = (node: ReactTestRenderer.ReactTestInstance, text: RegExp) =>
+  node.findAllByType(Text).some(t => text.test([t.props.children].flat().join('')));
+
+test('filters: choosing a service and applying sends its service id to the backend', async () => {
+  const tree = await renderScreen();
+
+  await act(async () => pressable(tree, p => p.accessibilityLabel === 'Filters').props.onPress());
+  await act(async () => {
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 20));
+  });
+  expect(textOf(tree)).toContain('Nails');
+
+  // Expand the category, tick a service.
+  await act(async () => pressable(tree, p => p.accessibilityState?.expanded === false).props.onPress());
+  const gel = tree.root.findAll(
+    n => n.props.accessibilityRole === 'checkbox' && typeof n.props.onPress === 'function' && hasText(n, /Gel manicure/),
+  )[0];
+  await act(async () => gel.props.onPress());
+  await act(async () => {
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 20));
+  });
+
+  // CTA shows the live preview count, then applies.
+  const cta = tree.root.findAll(
+    n => typeof n.props.onPress === 'function' && n.props.accessibilityRole === 'button' && hasText(n, /^Show \d+ masters?$/),
+  )[0];
+  expect(cta).toBeDefined();
+  await act(async () => cta.props.onPress());
+  await act(async () => {
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 20));
+  });
+
+  expect(searchBodies[searchBodies.length - 1]).toMatchObject({ category_ids: ['svc-gel'] });
+  // Filter badge: one active filter.
+  expect(pressable(tree, p => p.accessibilityLabel === 'Filters, 1 active')).toBeDefined();
   await act(async () => tree.unmount());
 });

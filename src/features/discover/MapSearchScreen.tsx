@@ -15,7 +15,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Keyboard, View, type NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { MasterCardDto, MasterSearchRequest } from '../../api';
+import type { MasterCardDto } from '../../api';
 import { useMasterSearch } from '../../query';
 import { useDebouncedValue } from '../../shared/useDebouncedValue';
 import { makeStyles } from '../../theme';
@@ -29,13 +29,24 @@ import { SearchAreaButton } from './components/SearchAreaButton';
 import { SearchBar } from './components/SearchBar';
 import { distanceMeters } from './geo';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, MAP_STYLES, MAX_ZOOM, MIN_ZOOM, type MapStyleName } from './mapConfig';
-import { DEFAULT_FILTERS, countActiveFilters, type SearchFilters } from './searchFilters';
+import {
+  DEFAULT_FILTERS,
+  applyClientFilters,
+  buildSearchRequest,
+  countActiveFilters,
+  type SearchFilters,
+} from './searchFilters';
 import { useUserLocation } from './useUserLocation';
 
 /** Height of the collapsed results sheet — map ornaments sit above it. */
 const SHEET_OVERLAP = 330;
 
-export function MapSearchScreen() {
+interface MapSearchScreenProps {
+  /** Opens a master's profile (wired to navigation by the tab route). */
+  onOpenMaster?: (master: MasterCardDto) => void;
+}
+
+export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraRef>(null);
@@ -56,24 +67,17 @@ export function MapSearchScreen() {
   const favoriteIds = useFavoriteIds();
   const { granted: locationGranted, locate } = useUserLocation();
 
-  const request = useMemo<MasterSearchRequest>(
-    () => ({
-      search_query: debouncedQuery || undefined,
-      sort_by: filters.sort === 'rating' ? 'rating_desc' : undefined,
-      category_ids: filters.categoryIds.length ? filters.categoryIds : undefined,
-      favorites_only: filters.favoritesOnly,
-      center: { lat: searchCenter[1], lng: searchCenter[0] },
-      radius_meters: filters.radiusMeters,
-    }),
+  const request = useMemo(
+    () => buildSearchRequest(filters, debouncedQuery, searchCenter),
     [debouncedQuery, filters, searchCenter],
   );
   const search = useMasterSearch(request);
 
-  // The backend ignores favorites_only — apply it here.
-  const masters = useMemo(() => {
-    const all = search.data ?? [];
-    return filters.favoritesOnly ? all.filter(m => favoriteIds.has(m.id)) : all;
-  }, [search.data, filters.favoritesOnly, favoriteIds]);
+  // Favorites, price range and price sorting aren't applied by the backend.
+  const masters = useMemo(
+    () => applyClientFilters(search.data ?? [], filters, favoriteIds),
+    [search.data, filters, favoriteIds],
+  );
 
   const flyTo = useCallback((center: LngLat, zoom?: number) => {
     cameraRef.current?.easeTo({ center, zoom: zoom ?? zoomRef.current, duration: 500 });
@@ -130,21 +134,16 @@ export function MapSearchScreen() {
     sheetRef.current?.scrollToMaster(master.id);
   }, []);
 
-  const selectFromList = useCallback(
-    (master: MasterCardDto) => {
-      setSelectedId(master.id);
-      setListMode(false);
-      flyTo([master.lng, master.lat]);
-    },
-    [flyTo],
-  );
-
   const toggleFavorite = useCallback((master: MasterCardDto) => favoritesStore.toggle(master.id), []);
 
-  const book = useCallback((master: MasterCardDto) => {
-    // TODO: navigate to the master's profile / booking flow once those screens exist.
-    Alert.alert(master.displayName, 'Booking will be available soon.');
-  }, []);
+  // Card tap and "Book" both open the profile (services are picked there).
+  const openMaster = useCallback(
+    (master: MasterCardDto) => {
+      setSelectedId(master.id);
+      onOpenMaster?.(master);
+    },
+    [onOpenMaster],
+  );
 
   const controlsTop = insets.top + HEADER_HEIGHT + 12 + 50 + 16;
 
@@ -172,8 +171,8 @@ export function MapSearchScreen() {
         {locationGranted && <UserLocation />}
         {masters.map(master => (
           <Marker
-            key={master.id}
-            id={String(master.id)}
+            key={master.pinId}
+            id={master.pinId}
             lngLat={[master.lng, master.lat]}
             anchor="bottom"
             onPress={() => selectFromMap(master)}
@@ -222,9 +221,9 @@ export function MapSearchScreen() {
           favoriteIds={favoriteIds}
           listMode={listMode}
           onToggleListMode={() => setListMode(m => !m)}
-          onSelect={listMode ? selectFromList : selectFromMap}
+          onSelect={openMaster}
           onToggleFavorite={toggleFavorite}
-          onBook={book}
+          onBook={openMaster}
           onRetry={() => search.refetch()}
         />
       </View>
@@ -232,6 +231,8 @@ export function MapSearchScreen() {
       <FiltersSheet
         visible={filtersOpen}
         value={filters}
+        query={debouncedQuery}
+        center={searchCenter}
         onClose={() => setFiltersOpen(false)}
         onApply={next => {
           setFilters(next);

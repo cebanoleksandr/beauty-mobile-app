@@ -84,6 +84,8 @@ export interface ColorTokens {
   buttonNeutral: string;
   /** Text on a peach button where `onPrimary` is too dark (card "Book"). */
   onPrimarySoft: string;
+  /** Positive status (free slot available). */
+  success: string;
 }
 
 export const darkColors: ColorTokens = {
@@ -140,6 +142,7 @@ export const darkColors: ColorTokens = {
   chrome: 'rgba(14, 14, 17, 0.85)',
   buttonNeutral: '#2A2A2D',
   onPrimarySoft: '#6A4535',
+  success: '#34D399',
 };
 
 export const lightColors: ColorTokens = {
@@ -196,4 +199,5 @@ export const lightColors: ColorTokens = {
   chrome: 'rgba(250, 250, 250, 0.9)',
   buttonNeutral: neutral[95],
   onPrimarySoft: primary[20],
+  success: '#059669',
 };

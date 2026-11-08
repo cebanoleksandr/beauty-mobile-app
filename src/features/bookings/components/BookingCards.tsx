@@ -4,7 +4,8 @@
  * (the backend lets only the master reschedule).
  */
 import React from 'react';
-import { Image, Linking, Pressable, Text, View } from 'react-native';
+import { Star } from 'lucide-react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import CalendarIcon from '../../../assets/icons/bookings/calendar.svg';
 import CalendarSmallIcon from '../../../assets/icons/bookings/calendar-small.svg';
 import ClockIcon from '../../../assets/icons/bookings/clock.svg';
@@ -17,6 +18,7 @@ import StoreIcon from '../../../assets/icons/bookings/store.svg';
 import { resolveApiUrl, type BookingDetailResponse } from '../../../api';
 import { useTranslate } from '../../../i18n/language';
 import { formatPrice } from '../../../shared/format';
+import { openTelegramProfile } from '../../../shared/openTelegram';
 import { AmbientGlow } from '../../../shared/ui';
 import { makeStyles } from '../../../theme';
 import { formatDuration } from '../../master-profile/profileFormat';
@@ -28,15 +30,15 @@ export interface BookingCardActions {
   onDirections?: (b: BookingDetailResponse) => void;
   onCancel?: (b: BookingDetailResponse) => void;
   cancelling?: boolean;
+  /** Past bookings: rate (or re-rate) the master. */
+  onRate?: (b: BookingDetailResponse) => void;
 }
 
-function openTelegram(username: string | null) {
-  if (username) Linking.openURL(`https://t.me/${username}`);
-}
+const openTelegram = openTelegramProfile;
 
-export function StatusPill({ status }: { status: BookingDetailResponse['status'] }) {
+export function StatusPill({ status, perspective }: { status: BookingDetailResponse['status']; perspective?: 'client' | 'master' }) {
   const styles = useStyles();
-  const { label, tone } = statusInfo(status);
+  const { label, tone } = statusInfo(status, perspective);
   return (
     <View style={[styles.pill, styles[`pill_${tone}` as const]]}>
       {(tone === 'success' || tone === 'pending') && <View style={[styles.pillDot, styles[`dot_${tone}` as const]]} />}
@@ -157,10 +159,10 @@ export function HeroBookingCard({ booking, onOpenMaster, onDirections, onCancel,
   );
 }
 
-export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCancel, cancelling }: { booking: BookingDetailResponse } & BookingCardActions) {
+export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCancel, cancelling, onRate }: { booking: BookingDetailResponse } & BookingCardActions) {
   const styles = useStyles();
   const tr = useTranslate();
-  const showActions = (onDirections && booking.servicePointAddress) || onCancel;
+  const showActions = (onDirections && booking.servicePointAddress) || onCancel || onRate;
 
   return (
     <View style={styles.compact}>
@@ -231,6 +233,18 @@ export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCanc
             >
               <DirectionsSmallIcon />
               <Text style={styles.smallButtonText}>Directions</Text>
+            </Pressable>
+          )}
+          {onRate && (
+            <Pressable
+              onPress={() => onRate(booking)}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.smallButton, pressed && styles.pressed]}
+            >
+              <Star size={14} color="#FBBF24" fill={booking.clientReviewRating !== null ? '#FBBF24' : 'transparent'} />
+              <Text style={styles.smallButtonText}>
+                {booking.clientReviewRating !== null ? 'Edit rating' : 'Rate master'}
+              </Text>
             </Pressable>
           )}
           {onCancel && (

@@ -16,9 +16,9 @@ import SparklesIcon from '../../assets/icons/sparkles.svg';
 import SwapIcon from '../../assets/icons/swap.svg';
 import TelegramBadgeIcon from '../../assets/icons/telegram-badge.svg';
 import VerifiedIcon from '../../assets/icons/verified.svg';
-import { resolveApiUrl, userService, type UserResponse } from '../../api';
+import { ApiError, resolveApiUrl, userService, type UserResponse } from '../../api';
 import { useSignOut } from '../../auth';
-import { useBecomeMaster, useMe, useSwitchMode } from '../../query';
+import { useMe, useSwitchMode } from '../../query';
 import { AmbientGlow, CircleIconButton, DotBadge } from '../../shared/ui';
 import { makeStyles } from '../../theme';
 import { RoleCard } from './RoleCard';
@@ -28,27 +28,30 @@ type Role = 'CLIENT' | 'MASTER';
 interface RoleSelectScreenProps {
   /** Called once the chosen mode is saved on the backend. */
   onCompleted: (role: Role) => void;
+  /** "I'm a master" without active services → master onboarding. */
+  onBecomeMaster: () => void;
 }
 
-export function RoleSelectScreen({ onCompleted }: RoleSelectScreenProps) {
+export function RoleSelectScreen({ onCompleted, onBecomeMaster }: RoleSelectScreenProps) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const { data: me } = useMe();
   const signOut = useSignOut();
   const switchMode = useSwitchMode();
-  const becomeMaster = useBecomeMaster();
   const [role, setRole] = useState<Role>(me?.context === 'MASTER' ? 'MASTER' : 'CLIENT');
   const [saving, setSaving] = useState(false);
 
   const onContinue = async () => {
+    // MASTER mode needs a master profile with at least one active service —
+    // the onboarding creates both and switches the mode itself.
+    if (role === 'MASTER' && !me?.masterProfile) return onBecomeMaster();
     setSaving(true);
     try {
-      // MASTER mode requires a master profile; create an empty one on first switch.
-      if (role === 'MASTER' && !me?.masterProfile) await becomeMaster.mutateAsync({});
       await switchMode.mutateAsync(role);
       onCompleted(role);
-    } catch {
-      Alert.alert('Could not save your choice', 'Please try again.');
+    } catch (e) {
+      if (role === 'MASTER' && e instanceof ApiError && e.status === 400) onBecomeMaster();
+      else Alert.alert('Could not save your choice', 'Please try again.');
     } finally {
       setSaving(false);
     }

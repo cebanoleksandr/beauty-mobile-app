@@ -6,6 +6,8 @@
  *    hero, later bookings, status, duration, date & time, address
  *    (+ Google Maps directions), price, Telegram message, cancel,
  *    "book a new treatment" callout;
+ *  - added from the web app: rating the master for completed / missed
+ *    visits (`POST /api/reviews`, optional complaint for admins);
  *  - dropped: "Atelier concierge", "Live sync" (no realtime client here),
  *    verified badge, distance, deposit, Reschedule (master-only on the backend),
  *    calendar-sync button.
@@ -19,6 +21,7 @@ import { openDirectionsTo } from '../../shared/openDirections';
 import { makeStyles, useTheme } from '../../theme';
 import { DiscoverHeader } from '../discover/components/DiscoverHeader';
 import { canCancel, groupBookings, monthLabel, relativeDayBadge, type BookingTab } from './bookingGroups';
+import { RATEABLE_STATUSES, RatingSheet } from '../reviews/RatingSheet';
 import { CompactBookingCard, HeroBookingCard, type BookingCardActions } from './components/BookingCards';
 
 interface BookingsScreenProps {
@@ -38,6 +41,7 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
   const bookings = useBookings('as-client');
   const cancelBooking = useCancelBooking();
   const [tab, setTab] = useState<BookingTab>('upcoming');
+  const [ratingFor, setRatingFor] = useState<BookingDetailResponse | null>(null);
 
   const groups = useMemo(() => groupBookings(bookings.data ?? []), [bookings.data]);
   const list = groups[tab];
@@ -68,6 +72,7 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
           }
         : undefined,
     onCancel: canCancel(b) ? confirmCancel : undefined,
+    onRate: RATEABLE_STATUSES.includes(b.status) ? setRatingFor : undefined,
     cancelling: cancelBooking.isPending && cancelBooking.variables === b.id,
   });
 
@@ -172,6 +177,7 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
           <Text style={styles.empty}>{tab === 'past' ? 'No past bookings yet.' : 'No cancelled bookings.'}</Text>
         )}
       </ScrollView>
+      <RatingSheet booking={ratingFor} target="master" onClose={() => setRatingFor(null)} />
     </View>
   );
 }

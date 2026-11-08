@@ -52,7 +52,7 @@ afterEach(() => client?.clear());
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } };
 const flush = () => act(async () => new Promise<void>(resolve => setTimeout(() => resolve(), 20)));
 
-async function render(onOpenMasterProfile = jest.fn()) {
+async function render(onOpenMasterProfile = jest.fn(), onBecomeMaster?: () => void) {
   client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   let tree!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
@@ -60,7 +60,7 @@ async function render(onOpenMasterProfile = jest.fn()) {
       <QueryClientProvider client={client!}>
         <ThemeProvider>
           <SafeAreaProvider initialMetrics={metrics}>
-            <SettingsScreen onOpenMasterProfile={onOpenMasterProfile} />
+            <SettingsScreen onOpenMasterProfile={onOpenMasterProfile} onBecomeMaster={onBecomeMaster} />
           </SafeAreaProvider>
         </ThemeProvider>
       </QueryClientProvider>,
@@ -126,17 +126,22 @@ test('confirming in the sheet PUTs the active role', async () => {
   await act(async () => tree.unmount());
 });
 
-test('master mode without active services explains the 400', async () => {
+test('master mode without active services explains the 400 and offers onboarding', async () => {
   roleStatus = 400;
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-  const tree = await render();
+  const onBecomeMaster = jest.fn();
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+    buttons?.find(b => b.text === 'Add services')?.onPress?.();
+  });
+  const tree = await render(jest.fn(), onBecomeMaster);
   await act(async () => pressable(tree, p => p.accessibilityLabel === 'Master mode').props.onPress());
   await act(async () => byText(tree, 'Switch to Master mode').props.onPress());
   await flush();
   expect(alert).toHaveBeenCalledWith(
     'Could not switch mode',
     'Add at least one active service to your master profile first.',
+    expect.any(Array),
   );
+  expect(onBecomeMaster).toHaveBeenCalled();
   alert.mockRestore();
   await act(async () => tree.unmount());
 });
@@ -151,6 +156,16 @@ test('without a master profile the switch is blocked client-side', async () => {
   expect(alert).toHaveBeenCalledWith('No master profile yet', expect.any(String));
   expect(requests.some(r => r.url.endsWith('/active-role'))).toBe(false);
   alert.mockRestore();
+  await act(async () => tree.unmount());
+});
+
+test('without a master profile, choosing Master opens the onboarding', async () => {
+  me = { ...baseMe, masterProfile: null };
+  const onBecomeMaster = jest.fn();
+  const tree = await render(jest.fn(), onBecomeMaster);
+  await act(async () => pressable(tree, p => p.accessibilityLabel === 'Master mode').props.onPress());
+  expect(onBecomeMaster).toHaveBeenCalled();
+  expect(texts(tree)).not.toContain('Switch to Master mode');
   await act(async () => tree.unmount());
 });
 
@@ -170,7 +185,7 @@ test('edit profile saves first and last name', async () => {
 });
 
 test('log out asks for confirmation and clears the session', async () => {
-  sessionStore.set('init-data');
+  sessionStore.set('session-token');
   const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
     buttons?.find(b => b.style === 'destructive')?.onPress?.();
   });

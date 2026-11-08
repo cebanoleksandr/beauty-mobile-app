@@ -11,7 +11,8 @@
  *    build & session info, header back/help buttons.
  *
  * The backend only allows MASTER mode with a master profile that has at least
- * one active service (ERR_NO_ACTIVE_SERVICES).
+ * one active service (ERR_NO_ACTIVE_SERVICES) — without one, choosing Master
+ * opens the "Become a master" onboarding instead.
  */
 import React, { useState } from 'react';
 import {
@@ -52,11 +53,13 @@ import { SwitchModeSheet } from './SwitchModeSheet';
 
 interface SettingsScreenProps {
   onOpenMasterProfile: (masterId: number) => void;
+  /** Master onboarding (add the first services). */
+  onBecomeMaster?: () => void;
 }
 
 const MODE_LABEL: Record<UserContext, string> = { CLIENT: 'Client', MASTER: 'Master', ADMIN: 'Admin' };
 
-export function SettingsScreen({ onOpenMasterProfile }: SettingsScreenProps) {
+export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: SettingsScreenProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -93,7 +96,7 @@ export function SettingsScreen({ onOpenMasterProfile }: SettingsScreenProps) {
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           <ProfileHeader me={me} />
-          <WorkspaceCard me={me} />
+          <WorkspaceCard me={me} onBecomeMaster={onBecomeMaster} />
 
           <Group title="Account">
             <Row
@@ -217,7 +220,7 @@ function ProfileHeader({ me }: { me: UserResponse }) {
   );
 }
 
-function WorkspaceCard({ me }: { me: UserResponse }) {
+function WorkspaceCard({ me, onBecomeMaster }: { me: UserResponse; onBecomeMaster?: () => void }) {
   const styles = useStyles();
   const [sheetTarget, setSheetTarget] = useState<UserContext | null>(null);
   const modes: UserContext[] = me.isAdmin ? ['CLIENT', 'MASTER', 'ADMIN'] : ['CLIENT', 'MASTER'];
@@ -230,7 +233,8 @@ function WorkspaceCard({ me }: { me: UserResponse }) {
   const choose = (mode: UserContext) => {
     if (mode === me.context) return;
     if (mode === 'MASTER' && !me.masterProfile) {
-      Alert.alert('No master profile yet', 'Set up your master profile and add a service to use master mode.');
+      if (onBecomeMaster) onBecomeMaster();
+      else Alert.alert('No master profile yet', 'Set up your master profile and add a service to use master mode.');
       return;
     }
     setSheetTarget(mode);
@@ -277,6 +281,7 @@ function WorkspaceCard({ me }: { me: UserResponse }) {
         visible={sheetTarget !== null}
         initialTarget={sheetTarget ?? me.context}
         onClose={() => setSheetTarget(null)}
+        onNeedsServices={onBecomeMaster}
       />
     </View>
   );

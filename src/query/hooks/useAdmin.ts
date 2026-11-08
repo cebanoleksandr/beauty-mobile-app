@@ -1,5 +1,5 @@
 /** Admin-mode hooks: users, catalog requests, reports. */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   adminService,
   type ApproveCatalogRequestRequest,
@@ -15,6 +15,7 @@ export function useAdminUsers(search?: string) {
   return useQuery({
     queryKey: qk.admin.users(search),
     queryFn: () => adminService.listUsers(search || undefined),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -27,6 +28,7 @@ function useInvalidateUsers() {
   return () => {
     queryClient.invalidateQueries({ queryKey: qk.admin.usersAll() });
     queryClient.invalidateQueries({ queryKey: qk.admin.admins() });
+    queryClient.invalidateQueries({ queryKey: qk.admin.auditLog() });
   };
 }
 
@@ -79,6 +81,7 @@ export function useApproveCatalogRequest() {
       adminService.approveCatalogRequest(id, req),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.admin.catalogRequestsAll() });
+      queryClient.invalidateQueries({ queryKey: qk.admin.auditLog() });
       // Approval writes a new category/service into the live catalog.
       queryClient.invalidateQueries({ queryKey: qk.catalog() });
     },
@@ -89,7 +92,10 @@ export function useRejectCatalogRequest() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: Uuid) => adminService.rejectCatalogRequest(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.admin.catalogRequestsAll() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.admin.catalogRequestsAll() });
+      queryClient.invalidateQueries({ queryKey: qk.admin.auditLog() });
+    },
   });
 }
 
@@ -106,6 +112,24 @@ export function useResolveReport() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: Uuid) => adminService.resolveReport(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.admin.reportsAll() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.admin.reportsAll() });
+      queryClient.invalidateQueries({ queryKey: qk.admin.auditLog() });
+    },
   });
+}
+
+// --- stats & audit ---------------------------------------------------------
+
+export function useAdminStats(days: number) {
+  return useQuery({
+    queryKey: qk.admin.stats(days),
+    queryFn: () => adminService.stats(days),
+    // Keep the old numbers on screen while another period loads.
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAuditLog(limit = 20) {
+  return useQuery({ queryKey: qk.admin.auditLog(), queryFn: () => adminService.auditLog(limit) });
 }

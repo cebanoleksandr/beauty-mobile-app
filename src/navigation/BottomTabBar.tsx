@@ -1,44 +1,43 @@
 /**
  * Bottom navigation. Figma nav 7:630 (active/inactive icons from 7:1430 and
  * 7:2233), minus "Home", with "Chats" replaced by "Favorites" (custom icon —
- * the design has none).
+ * the design has none). Master / admin tab sets reuse the same bar with
+ * lucide icons (the designs only cover client mode).
  */
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import React, { type FC } from 'react';
+import React, { type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import type { SvgProps } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import TabBookingsActive from '../assets/icons/tab-bookings-active.svg';
-import TabBookings from '../assets/icons/tab-bookings.svg';
-import TabFavoritesActive from '../assets/icons/custom/tab-favorites-active.svg';
-import TabFavorites from '../assets/icons/custom/tab-favorites.svg';
-import TabMapActive from '../assets/icons/tab-map-active.svg';
-import TabMap from '../assets/icons/tab-map.svg';
-import TabProfileActive from '../assets/icons/tab-profile-active.svg';
-import TabProfile from '../assets/icons/tab-profile.svg';
 import { makeStyles } from '../theme';
-import type { MainTabParamList } from './types';
 
-const TABS: Record<keyof MainTabParamList, { label: string; Icon: FC<SvgProps>; ActiveIcon: FC<SvgProps> }> = {
-  Discover: { label: 'Map', Icon: TabMap, ActiveIcon: TabMapActive },
-  Bookings: { label: 'Bookings', Icon: TabBookings, ActiveIcon: TabBookingsActive },
-  Favorites: { label: 'Favorites', Icon: TabFavorites, ActiveIcon: TabFavoritesActive },
-  Profile: { label: 'Profile', Icon: TabProfile, ActiveIcon: TabProfileActive },
-};
+export interface TabSpec {
+  label: string;
+  renderIcon: (focused: boolean) => ReactNode;
+}
 
-export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
+interface Props extends BottomTabBarProps {
+  tabs: Record<string, TabSpec>;
+  /** Red counters (pending requests etc.), keyed by route name. */
+  badges?: Record<string, number | undefined>;
+}
+
+export function BottomTabBar({ state, navigation, tabs, badges }: Props) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>
       {state.routes.map((route, index) => {
-        const tab = TABS[route.name as keyof MainTabParamList];
+        const tab = tabs[route.name];
         const focused = state.index === index;
-        const Icon = focused ? tab.ActiveIcon : tab.Icon;
+        const badge = badges?.[route.name] ?? 0;
 
         const onPress = () => {
-          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
           if (!focused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
         };
 
@@ -48,13 +47,20 @@ export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
             onPress={onPress}
             accessibilityRole="tab"
             accessibilityState={{ selected: focused }}
-            accessibilityLabel={tab.label}
+            accessibilityLabel={badge ? `${tab.label}, ${badge} new` : tab.label}
             style={styles.item}
           >
             <View style={styles.iconBox}>
-              <Icon />
+              {tab.renderIcon(focused)}
+              {badge > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
+                </View>
+              )}
             </View>
-            <Text style={[styles.label, focused && styles.labelActive]}>{tab.label}</Text>
+            <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={1}>
+              {tab.label}
+            </Text>
             {focused && <View style={styles.activeDot} />}
           </Pressable>
         );
@@ -82,6 +88,26 @@ const useStyles = makeStyles(t => ({
     height: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -12,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: t.radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F43F5E',
+    borderWidth: 1.5,
+    borderColor: t.colors.background,
+  },
+  badgeText: {
+    fontFamily: t.fontFamily.bold,
+    fontSize: 9,
+    lineHeight: 11,
+    color: '#FFFFFF',
   },
   label: {
     marginTop: t.spacing.xxs,

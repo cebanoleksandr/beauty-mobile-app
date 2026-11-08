@@ -33,9 +33,11 @@ interface SwitchModeSheetProps {
   /** Mode preselected when the sheet opens (e.g. the segment the user tapped). */
   initialTarget: UserContext;
   onClose: () => void;
+  /** MASTER was refused for lack of active services — open the onboarding. */
+  onNeedsServices?: () => void;
 }
 
-export function SwitchModeSheet({ me, visible, initialTarget, onClose }: SwitchModeSheetProps) {
+export function SwitchModeSheet({ me, visible, initialTarget, onClose, onNeedsServices }: SwitchModeSheetProps) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const switchMode = useSwitchMode();
@@ -58,6 +60,18 @@ export function SwitchModeSheet({ me, visible, initialTarget, onClose }: SwitchM
         Alert.alert(
           'Could not switch mode',
           noServices ? 'Add at least one active service to your master profile first.' : 'Please try again.',
+          noServices && onNeedsServices
+            ? [
+                { text: 'Not now', style: 'cancel' },
+                {
+                  text: 'Add services',
+                  onPress: () => {
+                    onClose();
+                    onNeedsServices();
+                  },
+                },
+              ]
+            : undefined,
         );
       },
     });

@@ -5,6 +5,7 @@ import { useIsSignedIn } from '../auth';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { BookingScreen } from '../features/booking/BookingScreen';
 import { MasterProfileScreen } from '../features/master-profile/MasterProfileScreen';
+import { BecomeMasterScreen } from '../features/master/onboarding/BecomeMasterScreen';
 import { RoleSelectScreen } from '../features/onboarding/RoleSelectScreen';
 import { useTheme } from '../theme';
 import { MainTabs } from './MainTabs';
@@ -13,7 +14,22 @@ import type { RootStackParamList } from './types';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function RoleSelectRoute({ navigation }: NativeStackScreenProps<RootStackParamList, 'RoleSelect'>) {
-  return <RoleSelectScreen onCompleted={() => navigation.replace('Main', { screen: 'Discover' })} />;
+  return (
+    <RoleSelectScreen
+      onCompleted={() => navigation.replace('Main')}
+      onBecomeMaster={() => navigation.navigate('BecomeMaster')}
+    />
+  );
+}
+
+function BecomeMasterRoute({ navigation }: NativeStackScreenProps<RootStackParamList, 'BecomeMaster'>) {
+  return (
+    <BecomeMasterScreen
+      onBack={() => navigation.goBack()}
+      // Onboarding switched the account to MASTER — Main now shows the master tabs.
+      onDone={() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] })}
+    />
+  );
 }
 
 function MasterProfileRoute({ navigation, route }: NativeStackScreenProps<RootStackParamList, 'MasterProfile'>) {
@@ -72,6 +88,7 @@ export function RootNavigator() {
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="MasterProfile" component={MasterProfileRoute} />
             <Stack.Screen name="Booking" component={BookingRoute} />
+            <Stack.Screen name="BecomeMaster" component={BecomeMasterRoute} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} options={{ animationTypeForReplace: 'pop' }} />

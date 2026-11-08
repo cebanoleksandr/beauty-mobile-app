@@ -405,3 +405,62 @@ export interface UserAdminResponse {
 export interface BanUserRequest {
   reason?: string;
 }
+
+// --- stats & audit log (`AdminStatsController`, `AuditLogController`) -------
+
+export interface AdminStatsResponse {
+  periodDays: number;
+  from: LocalDate;
+  users: {
+    total: number;
+    newInPeriod: number;
+    masters: number;
+    activeDay: number;
+    activeWeek: number;
+    activeMonth: number;
+  };
+  bookings: {
+    created: number;
+    approved: number;
+    rejectedByMaster: number;
+    autoRejected: number;
+    canceled: number;
+    completed: number;
+    missed: number;
+    medianResponseMinutes: number | null;
+  };
+  dailyBookings: { date: LocalDate; count: number }[];
+  topCategories: { id: Uuid; name: Translations; bookings: number }[];
+  topMasters: {
+    id: number;
+    name: string | null;
+    completed: number;
+    rating: number;
+  }[];
+  moderation: {
+    openReports: number;
+    pendingCatalogRequests: number;
+    bansInPeriod: number;
+  };
+}
+
+export type AuditAction =
+  | 'USER_BANNED'
+  | 'USER_UNBANNED'
+  | 'ADMIN_GRANTED'
+  | 'ADMIN_REVOKED'
+  | 'CATALOG_REQUEST_APPROVED'
+  | 'CATALOG_REQUEST_REJECTED'
+  | 'REPORT_RESOLVED';
+
+export interface AuditLogEntryResponse {
+  id: Uuid;
+  actorId: number;
+  actorName: string | null;
+  action: AuditAction;
+  targetType: 'USER' | 'CATALOG_REQUEST' | 'REPORT';
+  targetId: string;
+  details: Record<string, unknown> | null;
+  createdAt: IsoDateTime;
+}
+

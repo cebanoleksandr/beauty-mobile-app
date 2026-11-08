@@ -4,7 +4,9 @@
  */
 import { http } from '../client';
 import type {
+  AdminStatsResponse,
   ApproveCatalogRequestRequest,
+  AuditLogEntryResponse,
   CatalogRequestResponse,
   CatalogRequestStatus,
   ReportResponse,
@@ -44,4 +46,11 @@ export const adminService = {
     http.get<ReportResponse[]>('/api/admin/reports', { query: { status } }),
 
   resolveReport: (id: Uuid) => http.post<ReportResponse>(`/api/admin/reports/${id}/resolve`),
+
+  // --- stats & audit -----------------------------------------------------
+  /** Platform stats for the last `days` (1..365, UTC days). */
+  stats: (days: number) => http.get<AdminStatsResponse>('/api/admin/stats', { query: { days } }),
+
+  /** Newest admin actions first (max 200). */
+  auditLog: (limit = 20) => http.get<AuditLogEntryResponse[]>('/api/admin/audit-log', { query: { limit } }),
 };

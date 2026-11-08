@@ -66,6 +66,7 @@ test('groups by status and time; upcoming soonest first', () => {
 
 let data: BookingDetailResponse[] = [];
 const cancelled: string[] = [];
+const reviews: unknown[] = [];
 
 beforeEach(() => {
   cancelled.length = 0;
@@ -75,7 +76,12 @@ beforeEach(() => {
     booking('done', 'COMPLETED', at(-3, 10), { clientReviewRating: 5 }),
     booking('gone', 'REJECTED', at(2, 10)),
   ];
+  reviews.length = 0;
   globalThis.fetch = jest.fn(async (url: string, init?: RequestInit) => {
+    if (url.endsWith('/api/reviews') && init?.method === 'POST') {
+      reviews.push(JSON.parse(String(init.body)));
+      return { ok: true, status: 200, text: async () => JSON.stringify({ id: 'r1', masterId: 7, rating: 4 }) } as Response;
+    }
     const cancelMatch = url.match(/\/api\/bookings\/([^/]+)\/cancel$/);
     if (cancelMatch && init?.method === 'POST') {
       cancelled.push(cancelMatch[1]);
@@ -201,5 +207,23 @@ test('past and cancelled tabs', async () => {
   all = texts(tree);
   expect(all).toContain('Master gone');
   expect(all).toContain('Declined by master');
+  await act(async () => tree.unmount());
+});
+
+test('past visit can be rated (with an optional complaint)', async () => {
+  const tree = await render();
+  await act(async () =>
+    tree.root.findAll(n => n.props.accessibilityRole === 'tab' && typeof n.props.onPress === 'function')[1].props.onPress(),
+  );
+  // "done" was already rated 5 → the button offers editing.
+  await pressByText(tree, 'Edit rating');
+  expect(texts(tree)).toContain('Rate your master');
+  await act(async () =>
+    tree.root.findAll(n => n.props.accessibilityLabel === '4 stars' && typeof n.props.onPress === 'function')[0].props.onPress(),
+  );
+  await pressByText(tree, 'Submit review');
+  await flush();
+  expect(reviews).toEqual([{ bookingId: 'done', rating: 4 }]);
+  expect(texts(tree)).toContain('Thank you!');
   await act(async () => tree.unmount());
 });

@@ -22,7 +22,8 @@ export const qk = {
     all: () => ['masters'] as const,
     nearby: (lat: number, lon: number, radius?: number) =>
       ['masters', 'nearby', { lat, lon, radius }] as const,
-    search: (req: MasterSearchRequest | null) => ['masters', 'search', req] as const,
+    search: (req: MasterSearchRequest | null) =>
+      ['masters', 'search', req] as const,
     detail: (id: number) => ['masters', id] as const,
     availability: (id: number) => ['masters', id, 'availability'] as const,
     reviews: (id: number) => ['masters', id, 'reviews'] as const,
@@ -48,9 +49,12 @@ export const qk = {
     users: (search?: string) => ['admin', 'users', search ?? ''] as const,
     usersAll: () => ['admin', 'users'] as const,
     admins: () => ['admin', 'admins'] as const,
-    catalogRequests: (status: CatalogRequestStatus) => ['admin', 'catalog-requests', status] as const,
+    catalogRequests: (status: CatalogRequestStatus) =>
+      ['admin', 'catalog-requests', status] as const,
     catalogRequestsAll: () => ['admin', 'catalog-requests'] as const,
     reports: (status: ReportStatus) => ['admin', 'reports', status] as const,
     reportsAll: () => ['admin', 'reports'] as const,
+    stats: (days: number) => ['admin', 'stats', days] as const,
+    auditLog: () => ['admin', 'audit-log'] as const,
   },
 } as const;

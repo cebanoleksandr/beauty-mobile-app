@@ -54,7 +54,15 @@ export function canCancel(b: BookingDetailResponse, now = new Date()): boolean {
 
 export type StatusTone = 'success' | 'pending' | 'muted' | 'danger';
 
-export function statusInfo(status: BookingStatus): { label: string; tone: StatusTone } {
+export function statusInfo(
+  status: BookingStatus,
+  perspective: 'client' | 'master' = 'client',
+): { label: string; tone: StatusTone } {
+  if (perspective === 'master') {
+    if (status === 'PENDING') return { label: 'New request', tone: 'pending' };
+    if (status === 'REJECTED') return { label: 'Declined', tone: 'muted' };
+    if (status === 'MISSED') return { label: 'No-show', tone: 'danger' };
+  }
   switch (status) {
     case 'SCHEDULED':
       return { label: 'Confirmed', tone: 'success' };

@@ -22,6 +22,7 @@ import TimeCheck from '../../assets/icons/booking/time-check.svg';
 import { ApiError, NetworkError, type BookingDetailResponse, type MasterServiceDto } from '../../api';
 import { useTranslate } from '../../i18n/language';
 import { useCreateBooking, useMasterAvailability, useMasterDetail } from '../../query';
+import { useMasterAvailabilityLive } from '../../realtime';
 import { formatPrice } from '../../shared/format';
 import { makeStyles } from '../../theme';
 import { ServiceRow } from '../master-profile/components/ServiceRow';
@@ -60,6 +61,8 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
   const tr = useTranslate();
   const detail = useMasterDetail(masterId);
   const availability = useMasterAvailability(masterId);
+  // Slots taken / opened by others show up without a refresh.
+  useMasterAvailabilityLive(masterId);
   const createBooking = useCreateBooking();
 
   const master = detail.data;

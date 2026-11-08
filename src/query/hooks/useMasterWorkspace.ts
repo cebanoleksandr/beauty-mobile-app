@@ -11,6 +11,7 @@ import {
   type UpdateOfferRequest,
   type Uuid,
 } from '../../api';
+import { useLiveRefetchInterval } from '../../realtime/status';
 import { qk } from '../queryKeys';
 
 // --- offers ----------------------------------------------------------------
@@ -77,7 +78,12 @@ export function useSubmitOnboarding() {
 // --- slots -----------------------------------------------------------------
 
 export function useMasterSlots(options?: { enabled?: boolean }) {
-  return useQuery({ queryKey: qk.master.slots(), queryFn: masterSlotsService.getMySlots, ...options });
+  return useQuery({
+    queryKey: qk.master.slots(),
+    queryFn: masterSlotsService.getMySlots,
+    refetchInterval: useLiveRefetchInterval(),
+    ...options,
+  });
 }
 
 function useInvalidateSlots() {

@@ -8,6 +8,7 @@ import { BookingScreen } from '../features/booking/BookingScreen';
 import { MasterProfileScreen } from '../features/master-profile/MasterProfileScreen';
 import { BecomeMasterScreen } from '../features/master/onboarding/BecomeMasterScreen';
 import { RoleSelectScreen } from '../features/onboarding/RoleSelectScreen';
+import { useRealtimeConnection } from '../realtime';
 import { useTheme } from '../theme';
 import { MainTabs } from './MainTabs';
 import type { RootStackParamList } from './types';
@@ -65,6 +66,8 @@ export function RootNavigator() {
   const isSignedIn = useIsSignedIn();
   const hydrated = useSessionHydrated();
   const { colors } = useTheme();
+  // Live booking / calendar updates while signed in.
+  useRealtimeConnection();
 
   // Restore the saved session before choosing between Login and the app.
   useEffect(() => {

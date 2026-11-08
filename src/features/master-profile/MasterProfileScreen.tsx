@@ -37,6 +37,7 @@ import VerifiedIcon from '../../assets/icons/master/verified.svg';
 import { ApiError, resolveApiUrl, type MasterDetailDto, type MasterServiceDto } from '../../api';
 import { useTranslate } from '../../i18n/language';
 import { useMasterAvailability, useMasterDetail } from '../../query';
+import { useMasterAvailabilityLive } from '../../realtime';
 import { formatDistance, formatPrice, formatRating } from '../../shared/format';
 import { openDirections } from '../../shared/openDirections';
 import { AmbientGlow } from '../../shared/ui';
@@ -72,6 +73,8 @@ export function MasterProfileScreen({ masterId, preview, onBack, onBook }: Maste
   const insets = useSafeAreaInsets();
   const detail = useMasterDetail(masterId);
   const availability = useMasterAvailability(masterId);
+  // Slots taken / opened by others show up without a refresh.
+  useMasterAvailabilityLive(masterId);
   const favoriteIds = useFavoriteIds();
   const favorite = favoriteIds.has(masterId);
 

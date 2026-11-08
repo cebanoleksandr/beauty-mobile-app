@@ -9,12 +9,15 @@ import {
   type RescheduleBookingRequest,
   type Uuid,
 } from '../../api';
+import { useLiveRefetchInterval } from '../../realtime/status';
 import { qk } from '../queryKeys';
 
 export function useBookings(scope: BookingScope = 'as-client') {
   return useQuery({
     queryKey: qk.bookings.list(scope),
     queryFn: () => bookingsService.list(scope),
+    // Realtime pushes invalidate this; poll only while the socket is down.
+    refetchInterval: useLiveRefetchInterval(),
   });
 }
 

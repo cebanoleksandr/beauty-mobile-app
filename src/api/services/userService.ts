@@ -11,11 +11,11 @@ import type {
 
 export const userService = {
   /** Current user (upserted from Telegram initData on every request). */
-  getMe: (opts?: { credential?: string }) =>
+  getMe: (opts?: { authorization?: string }) =>
     http.get<UserResponse>(
       '/api/user/me',
       // Lets sign-in verify a credential before it is stored in the session.
-      opts?.credential ? { headers: { Authorization: `tma ${opts.credential}` } } : undefined,
+      opts?.authorization ? { headers: { Authorization: opts.authorization } } : undefined,
     ),
 
   updateMe: (req: UpdateUserRequest) => http.put<UserResponse>('/api/user/me', req),

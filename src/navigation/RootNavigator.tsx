@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { DarkTheme, NavigationContainer, type Theme as NavTheme } from '@react-navigation/native';
 import { createNativeStackNavigator, type NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useIsSignedIn } from '../auth';
+import { sessionStore, useIsSignedIn, useSessionHydrated } from '../auth';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { BookingScreen } from '../features/booking/BookingScreen';
 import { MasterProfileScreen } from '../features/master-profile/MasterProfileScreen';
@@ -62,7 +63,13 @@ function BookingRoute({ navigation, route }: NativeStackScreenProps<RootStackPar
  */
 export function RootNavigator() {
   const isSignedIn = useIsSignedIn();
+  const hydrated = useSessionHydrated();
   const { colors } = useTheme();
+
+  // Restore the saved session before choosing between Login and the app.
+  useEffect(() => {
+    sessionStore.hydrate();
+  }, []);
 
   const navTheme = useMemo<NavTheme>(
     () => ({
@@ -78,6 +85,14 @@ export function RootNavigator() {
     }),
     [colors],
   );
+
+  if (!hydrated) {
+    return (
+      <View style={[styles.splash, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer theme={navTheme}>
@@ -97,3 +112,7 @@ export function RootNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  splash: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+});

@@ -1,10 +1,11 @@
 /**
  * Minimal fetch-based HTTP client for the Slotly backend.
  *
- * Auth: the backend's only gate is `TelegramAuthFilter`, which expects
- * `Authorization: tma <initData>` (Telegram-signed initData, re-validated on
- * every request). Supply it via `setCredentialProvider`. A 401 means the
- * credential is missing/expired; 403 means banned or wrong mode.
+ * Auth: the backend's only gate is `TelegramAuthFilter`, which accepts the Mini
+ * App's `Authorization: tma <initData>` or — what this app uses — a mobile
+ * session `Authorization: Bearer <token>` obtained by signing in through the
+ * Telegram bot. Supply the full header value via `setCredentialProvider`.
+ * A 401 means the credential is missing/expired; 403 means banned or wrong mode.
  */
 import { getApiBaseUrl, REQUEST_TIMEOUT_MS } from './config';
 
@@ -14,7 +15,7 @@ type UnauthorizedHandler = (error: ApiError) => void;
 let credentialProvider: CredentialProvider = () => null;
 let onUnauthorized: UnauthorizedHandler | null = null;
 
-/** Registers the source of the `tma` credential (raw initData string). */
+/** Registers the source of the `Authorization` header value (e.g. `Bearer <token>`). */
 export function setCredentialProvider(provider: CredentialProvider): void {
   credentialProvider = provider;
 }
@@ -119,7 +120,7 @@ export async function request<T>(method: Method, path: string, options: RequestO
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (!options.skipAuth && !headers.Authorization) {
     const credential = await credentialProvider();
-    if (credential) headers.Authorization = `tma ${credential}`;
+    if (credential) headers.Authorization = credential;
   }
 
   const controller = new AbortController();

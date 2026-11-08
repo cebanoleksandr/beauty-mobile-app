@@ -9,6 +9,7 @@ export {
 } from './client';
 export { getApiBaseUrl, setApiBaseUrl } from './config';
 
+export { authService } from './services/authService';
 export { userService } from './services/userService';
 export { mastersService } from './services/mastersService';
 export { catalogService } from './services/catalogService';

@@ -1,7 +1,2 @@
-export { sessionStore, useIsSignedIn } from './sessionStore';
-export {
-  requestTelegramCredential,
-  setTelegramCredentialSource,
-  TelegramAuthUnavailableError,
-} from './telegramAuth';
-export { useTelegramSignIn, useSignOut } from './useAuth';
+export { sessionStore, useIsSignedIn, useSessionHydrated } from './sessionStore';
+export { TelegramNotInstalledError, useBotLogin, useSignOut, type BotLoginState } from './useAuth';

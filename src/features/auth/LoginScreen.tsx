@@ -1,18 +1,25 @@
-/** Figma: Masters → "Mobile Viewport Frame" (node 7:1824). */
-import React from 'react';
+/**
+ * Figma: Masters → "Mobile Viewport Frame" (node 7:1824).
+ *
+ * "Continue with Telegram" signs in through the bot: the app opens
+ * t.me/<bot>?start=login_…, the user taps Start and "Confirm sign-in" in the
+ * chat, and the app (polling meanwhile) receives its session — see useBotLogin.
+ */
+import React, { useEffect } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import heroImage from '../../assets/images/login-hero.jpg';
 import TelegramIcon from '../../assets/icons/telegram.svg';
-import { TelegramAuthUnavailableError, useTelegramSignIn } from '../../auth';
+import { TelegramNotInstalledError, useBotLogin } from '../../auth';
 import { ApiError, NetworkError } from '../../api';
 import { links } from '../../config/links';
 import { DotBadge } from '../../shared/ui';
 import { makeStyles, useTheme } from '../../theme';
 
 function signInErrorMessage(error: unknown): string {
-  if (error instanceof TelegramAuthUnavailableError) return error.message;
-  if (error instanceof ApiError && error.isUnauthorized) return 'Telegram session expired. Please try again.';
+  if (error instanceof TelegramNotInstalledError) return error.message;
+  if (error instanceof ApiError && error.status === 503) return 'Telegram sign-in is temporarily unavailable.';
+  if (error instanceof ApiError && error.isUnauthorized) return 'Sign-in expired. Please try again.';
   if (error instanceof ApiError && error.isForbidden) return 'This account has been blocked.';
   if (error instanceof NetworkError) return 'Could not reach the server. Check your connection.';
   return 'Something went wrong. Please try again.';
@@ -22,12 +29,13 @@ export function LoginScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const signIn = useTelegramSignIn();
+  const { state, start, cancel, openBot, checkNow } = useBotLogin();
+  const busy = state.phase === 'starting';
+  const failure = state.phase === 'error' ? state.error : null;
 
-  const onContinue = () =>
-    signIn.mutate(undefined, {
-      onError: error => Alert.alert('Sign-in failed', signInErrorMessage(error)),
-    });
+  useEffect(() => {
+    if (failure) Alert.alert('Sign-in failed', signInErrorMessage(failure));
+  }, [failure]);
 
   const openLink = (url: string | null) => url && Linking.openURL(url);
 
@@ -61,15 +69,47 @@ export function LoginScreen() {
         </View>
 
         <View style={styles.cta}>
+          {state.phase === 'waiting' && (
+            <View style={styles.waiting} accessibilityLiveRegion="polite">
+              <View style={styles.waitingHeader}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.waitingTitle}>Waiting for confirmation in Telegram</Text>
+              </View>
+              <Text style={styles.waitingStep}>1. Tap “Start” in the bot chat</Text>
+              <Text style={styles.waitingStep}>2. Tap “Confirm sign-in”, then come back here</Text>
+              <View style={styles.waitingActions}>
+                <Text
+                  style={styles.waitingLink}
+                  onPress={() => openBot(state.botUrl).catch(e => Alert.alert('Sign-in failed', signInErrorMessage(e)))}
+                  accessibilityRole="button"
+                >
+                  Open Telegram again
+                </Text>
+                <Text style={styles.waitingLink} onPress={checkNow} accessibilityRole="button">
+                  I've confirmed
+                </Text>
+                <Text style={styles.waitingCancel} onPress={cancel} accessibilityRole="button">
+                  Cancel
+                </Text>
+              </View>
+            </View>
+          )}
+          {state.phase === 'expired' && (
+            <Text style={styles.expired}>The sign-in request expired. Tap the button to try again.</Text>
+          )}
           <Pressable
-            onPress={onContinue}
-            disabled={signIn.isPending}
+            onPress={start}
+            disabled={busy || state.phase === 'waiting'}
             accessibilityRole="button"
-            accessibilityState={{ busy: signIn.isPending }}
-            style={({ pressed }) => [styles.telegramButton, pressed && styles.pressed]}
+            accessibilityState={{ busy }}
+            style={({ pressed }) => [
+              styles.telegramButton,
+              state.phase === 'waiting' && styles.dimmed,
+              pressed && styles.pressed,
+            ]}
           >
             <View style={styles.telegramIcon}>
-              {signIn.isPending ? (
+              {busy ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <TelegramIcon />
@@ -183,6 +223,28 @@ const useStyles = makeStyles(t => ({
     boxShadow: '0px 10px 30px -4px rgba(232, 180, 160, 0.35), 0px 4px 12px -2px rgba(232, 180, 160, 0.2)',
   },
   pressed: { opacity: t.opacity.pressed },
+  dimmed: { opacity: 0.5 },
+  waiting: {
+    gap: t.spacing.xs,
+    padding: t.spacing.lg,
+    borderRadius: t.radii.xl,
+    borderWidth: t.borderWidth.thin,
+    borderColor: 'rgba(232, 180, 160, 0.25)',
+    backgroundColor: t.colors.card,
+  },
+  waitingHeader: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, marginBottom: t.spacing.xs },
+  waitingTitle: {
+    flex: 1,
+    fontFamily: t.fontFamily.semibold,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.colors.text,
+  },
+  waitingStep: { ...t.typography.bodySmall, color: t.colors.textAccent },
+  waitingActions: { flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.lg, marginTop: t.spacing.sm },
+  waitingLink: { ...t.typography.labelMedium, color: t.colors.primary },
+  waitingCancel: { ...t.typography.labelMedium, color: t.colors.textSecondary },
+  expired: { ...t.typography.bodySmall, textAlign: 'center', color: '#F2B8B5' },
   telegramIcon: {
     width: 28,
     height: 28,

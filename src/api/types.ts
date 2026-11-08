@@ -464,3 +464,21 @@ export interface AuditLogEntryResponse {
   createdAt: IsoDateTime;
 }
 
+// ---------------------------------------------------------------------------
+// auth/ — mobile sign-in through the Telegram bot (`MobileAuthController`)
+// ---------------------------------------------------------------------------
+
+export interface MobileLoginStartResponse {
+  /** Public id of the attempt (also inside `botUrl`). */
+  code: string;
+  /** Secret proving this app started the attempt — send it when polling. */
+  pollToken: string;
+  /** `https://t.me/<bot>?start=login_<code>` */
+  botUrl: string;
+  expiresInSeconds: number;
+}
+
+export type MobileLoginPollResponse =
+  | { status: 'PENDING' }
+  | { status: 'EXPIRED' }
+  | { status: 'CONFIRMED'; token: string };

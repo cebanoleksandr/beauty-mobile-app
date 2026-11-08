@@ -11,6 +11,7 @@ import { resolveApiUrl, type MasterDetailDto, type MasterServiceDto } from '../.
 import { useTranslate } from '../../../i18n/language';
 import { formatPrice, formatRating } from '../../../shared/format';
 import { AmbientGlow } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 import { formatDuration } from '../../master-profile/profileFormat';
 
@@ -23,6 +24,7 @@ interface BookingSummaryCardProps {
 
 export function BookingSummaryCard({ master, service, onChangeService }: BookingSummaryCardProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const tr = useTranslate();
   const avatar = resolveApiUrl(master.avatarUrl);
   const rating = formatRating(master.rating);
@@ -35,7 +37,7 @@ export function BookingSummaryCard({ master, service, onChangeService }: Booking
         <View>
           <View style={styles.avatar}>{avatar && <Image source={{ uri: avatar }} style={styles.avatarImage} />}</View>
           {master.verified && (
-            <View style={styles.verified} accessibilityLabel="Verified master">
+            <View style={styles.verified} accessibilityLabel={t('profile.verified')}>
               <VerifiedSmall />
             </View>
           )}
@@ -58,7 +60,7 @@ export function BookingSummaryCard({ master, service, onChangeService }: Booking
 
       <View style={styles.serviceRow}>
         <View style={styles.serviceInfo}>
-          <Text style={styles.overline}>Selected service</Text>
+          <Text style={styles.overline}>{t('booking.selectedService')}</Text>
           <Text style={styles.serviceName}>{tr(service.name)}</Text>
           <View style={styles.serviceMeta}>
             <ClockIcon />
@@ -69,7 +71,7 @@ export function BookingSummaryCard({ master, service, onChangeService }: Booking
         </View>
         {onChangeService && (
           <Pressable onPress={onChangeService} accessibilityRole="button" hitSlop={8}>
-            <Text style={styles.change}>Change</Text>
+            <Text style={styles.change}>{t('booking.change')}</Text>
           </Pressable>
         )}
       </View>

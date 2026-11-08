@@ -4,6 +4,8 @@
  * time, none occupied (BookingFlowService.create). Same rules as the web
  * app's `slots.ts`, plus an explicit check that the slots are contiguous.
  */
+import { i18n } from '../../i18n';
+import * as dates from '../../i18n/dates';
 import type { AvailabilityDayDto, TimeSlotDto } from '../../api';
 
 export const SLOT_MINUTES = 30;
@@ -81,22 +83,17 @@ export function buildWeeks(days: readonly AvailabilityDayDto[], now = new Date()
   return weeks;
 }
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-export const weekdayShort = (iso: string) => WEEKDAYS[parseDay(iso).getDay()];
+// Localized (current UI language) date pieces.
+export const weekdayShort = (iso: string) => dates.weekdayShort(parseDay(iso));
 export const dayOfMonth = (iso: string) => parseDay(iso).getDate();
-export const monthYear = (iso: string) => {
-  const d = parseDay(iso);
-  return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-};
-export const monthShort = (iso: string) => MONTHS[parseDay(iso).getMonth()].slice(0, 3);
+export const monthYear = (iso: string) => dates.monthYear(parseDay(iso));
+export const monthShort = (iso: string) => dates.monthShort(parseDay(iso));
 
-/** `Thu 24 Oct, 15:00 – 17:30`. */
+/** `Thu, Oct 24, 15:00 – 17:30` (localized). */
 export function formatAppointment(date: string, time: string, durationMinutes: number): string {
-  const d = parseDay(date);
-  return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${monthShort(date)}, ${time} – ${addMinutes(time, durationMinutes)}`;
+  return i18n.t('booking.appointment', {
+    day: dates.weekdayDayMonth(parseDay(date)),
+    start: time,
+    end: addMinutes(time, durationMinutes),
+  });
 }

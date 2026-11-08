@@ -9,6 +9,7 @@ import { FlatList, Image, Modal, Pressable, View, useWindowDimensions } from 're
 import { X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ExpandIcon from '../../../assets/icons/master/expand.svg';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 
 const GAP = 12;
@@ -17,6 +18,7 @@ const SHORT = (TALL - GAP) / 2;
 
 export function PortfolioGallery({ photos }: { photos: readonly string[] }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const groups: string[][] = [];
@@ -27,7 +29,7 @@ export function PortfolioGallery({ photos }: { photos: readonly string[] }) {
       key={uri + index}
       onPress={() => setViewerIndex(index)}
       accessibilityRole="imagebutton"
-      accessibilityLabel={`Portfolio photo ${index + 1}`}
+      accessibilityLabel={t('profile.photo', { index: index + 1 })}
       style={[styles.tile, { height }]}
     >
       <Image source={{ uri }} style={styles.image} resizeMode="cover" />
@@ -79,6 +81,7 @@ function PhotoViewer({
   onClose: () => void;
 }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -95,15 +98,13 @@ function PhotoViewer({
             getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
             keyExtractor={(uri, i) => uri + i}
             showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <Image source={{ uri: item }} style={{ width, height }} resizeMode="contain" />
-            )}
+            renderItem={({ item }) => <Image source={{ uri: item }} style={{ width, height }} resizeMode="contain" />}
           />
         )}
         <Pressable
           onPress={onClose}
           accessibilityRole="button"
-          accessibilityLabel="Close"
+          accessibilityLabel={t('common.close')}
           style={[styles.viewerClose, { top: insets.top + 16 }]}
         >
           <X size={20} color={colors.text} />

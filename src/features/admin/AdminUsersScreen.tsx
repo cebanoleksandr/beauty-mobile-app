@@ -29,6 +29,7 @@ import {
   Tag,
   TextField,
 } from '../../shared/ui';
+import { useTranslation } from '../../i18n';
 import { makeStyles, useTheme } from '../../theme';
 import { TabScreen } from '../common/TabScreen';
 
@@ -38,6 +39,7 @@ export function displayName(u: UserAdminResponse): string {
 
 export function AdminUsersScreen() {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { data: me } = useMe();
   const [search, setSearch] = useState('');
@@ -49,11 +51,11 @@ export function AdminUsersScreen() {
   const revoke = useRevokeAdmin();
   const [banning, setBanning] = useState<UserAdminResponse | null>(null);
   const busy = unban.isPending || grant.isPending || revoke.isPending;
-  const onError = () => Alert.alert('Action failed', 'Please try again.');
+  const onError = () => Alert.alert(t('admin.common.actionFailed'), t('common.pleaseTryAgain'));
 
   const confirm = (title: string, message: string, action: string, run: () => void, destructive = false) =>
     Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
       {
         text: action,
         style: destructive ? 'destructive' : 'default',
@@ -69,31 +71,31 @@ export function AdminUsersScreen() {
         admins.refetch();
       }}
     >
-      <PageTitle title="Users" subtitle="Admins, bans and access" />
+      <PageTitle title={t('admin.users.title')} subtitle={t('admin.users.subtitle')} />
 
       {!!admins.data?.length && (
         <View style={styles.section}>
-          <SectionTitle>{`Admins (${admins.data.length})`}</SectionTitle>
+          <SectionTitle>{t('admin.users.admins', { count: admins.data.length })}</SectionTitle>
           <View style={styles.group}>
             {admins.data.map((u, i) => (
               <View key={u.id} style={[styles.adminRow, i < admins.data!.length - 1 && styles.divider]}>
                 <Avatar name={displayName(u)} size={36} />
                 <Text style={[styles.name, styles.flex]} numberOfLines={1}>
                   {displayName(u)}
-                  {u.id === me?.id ? ' (you)' : ''}
+                  {u.id === me?.id ? t('admin.users.you') : ''}
                 </Text>
                 {u.id !== me?.id && (
                   <Button
-                    label="Revoke"
+                    label={t('admin.users.revoke')}
                     compact
                     variant="danger"
                     icon={<ShieldOff size={14} color="#FB7185" />}
                     disabled={busy}
                     onPress={() =>
                       confirm(
-                        'Revoke admin access?',
+                        t('admin.users.revokeTitle'),
                         displayName(u),
-                        'Revoke',
+                        t('admin.users.revoke'),
                         () => revoke.mutate(u.id, { onError }),
                         true,
                       )
@@ -107,15 +109,15 @@ export function AdminUsersScreen() {
       )}
 
       <View style={styles.section}>
-        <SectionTitle>Users</SectionTitle>
+        <SectionTitle>{t('admin.users.users')}</SectionTitle>
         <View>
           <TextField
             value={search}
             onChangeText={setSearch}
-            placeholder="Search by name or @username"
+            placeholder={t('admin.users.searchPlaceholder')}
             autoCapitalize="none"
             style={styles.search}
-            accessibilityLabel="Search users"
+            accessibilityLabel={t('admin.users.search')}
           />
           <View style={styles.searchIcon} pointerEvents="none">
             <Search size={16} color={colors.textSecondary} />
@@ -127,7 +129,7 @@ export function AdminUsersScreen() {
         ) : users.isError ? (
           <ErrorState onRetry={() => users.refetch()} />
         ) : users.data.length === 0 ? (
-          <EmptyState Icon={Users} title="No users found" />
+          <EmptyState Icon={Users} title={t('admin.users.empty')} />
         ) : (
           users.data.map(u => (
             <Card key={u.id} style={styles.card}>
@@ -142,26 +144,30 @@ export function AdminUsersScreen() {
                   </Text>
                 </View>
                 {u.isAdmin && <ShieldCheck size={18} color={colors.primary} />}
-                {u.isBanned && <Tag label="Banned" tone="danger" />}
+                {u.isBanned && <Tag label={t('admin.users.banned')} tone="danger" />}
               </View>
-              {u.isBanned && !!u.bannedReason && <Text style={styles.reason}>Reason: {u.bannedReason}</Text>}
+              {u.isBanned && !!u.bannedReason && (
+                <Text style={styles.reason}>{t('admin.users.reason', { reason: u.bannedReason })}</Text>
+              )}
               {u.id !== me?.id && (
                 <View style={styles.actions}>
                   {u.isBanned ? (
                     <Button
-                      label="Unban"
+                      label={t('admin.users.unban')}
                       compact
                       variant="secondary"
                       icon={<CircleCheck size={15} color={colors.text} />}
                       disabled={busy}
                       style={styles.flex}
                       onPress={() =>
-                        confirm('Unban this user?', displayName(u), 'Unban', () => unban.mutate(u.id, { onError }))
+                        confirm(t('admin.users.unbanTitle'), displayName(u), t('admin.users.unban'), () =>
+                          unban.mutate(u.id, { onError }),
+                        )
                       }
                     />
                   ) : (
                     <Button
-                      label="Ban"
+                      label={t('admin.users.ban')}
                       compact
                       variant="danger"
                       icon={<Ban size={15} color="#FB7185" />}
@@ -173,7 +179,7 @@ export function AdminUsersScreen() {
                   )}
                   {!u.isAdmin && !u.isBanned && (
                     <Button
-                      label="Make admin"
+                      label={t('admin.users.makeAdmin')}
                       compact
                       variant="secondary"
                       icon={<ShieldCheck size={15} color={colors.text} />}
@@ -181,9 +187,9 @@ export function AdminUsersScreen() {
                       style={styles.flex}
                       onPress={() =>
                         confirm(
-                          'Grant admin access?',
-                          `${displayName(u)} will be able to moderate the platform.`,
-                          'Grant',
+                          t('admin.users.grantTitle'),
+                          t('admin.users.grantText', { name: displayName(u) }),
+                          t('admin.users.grant'),
                           () => grant.mutate(u.id, { onError }),
                         )
                       }
@@ -203,6 +209,7 @@ export function AdminUsersScreen() {
 
 function BanSheet({ user, onClose }: { user: UserAdminResponse | null; onClose: () => void }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const ban = useBanUser();
   const [reason, setReason] = useState('');
   return (
@@ -210,11 +217,11 @@ function BanSheet({ user, onClose }: { user: UserAdminResponse | null; onClose: 
       visible={user !== null}
       onClose={onClose}
       onShow={() => setReason('')}
-      title="Ban user"
-      subtitle={user ? `${displayName(user)} will lose access to the app` : undefined}
+      title={t('admin.users.banTitle')}
+      subtitle={user ? t('admin.users.banSubtitle', { name: displayName(user) }) : undefined}
       footer={
         <Button
-          label="Ban user"
+          label={t('admin.users.banTitle')}
           variant="danger"
           loading={ban.isPending}
           onPress={() =>
@@ -223,7 +230,7 @@ function BanSheet({ user, onClose }: { user: UserAdminResponse | null; onClose: 
               { userId: user.id, reason: reason.trim() || undefined },
               {
                 onSuccess: onClose,
-                onError: () => Alert.alert('Could not ban', 'Please try again.'),
+                onError: () => Alert.alert(t('admin.users.banError'), t('common.pleaseTryAgain')),
               },
             )
           }
@@ -233,12 +240,12 @@ function BanSheet({ user, onClose }: { user: UserAdminResponse | null; onClose: 
       <TextField
         value={reason}
         onChangeText={setReason}
-        placeholder="Reason (optional, visible to admins)"
+        placeholder={t('admin.users.reasonPlaceholder')}
         maxLength={500}
         multiline
       />
       <Pressable onPress={onClose} accessibilityRole="button" style={styles.cancel}>
-        <Text style={styles.meta}>Cancel</Text>
+        <Text style={styles.meta}>{t('common.cancel')}</Text>
       </Pressable>
     </BottomSheet>
   );

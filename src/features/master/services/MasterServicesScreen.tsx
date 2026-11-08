@@ -16,6 +16,7 @@ import {
   useUpdateOffer,
 } from '../../../query';
 import { Button, EmptyState, ErrorState, LoadingState, PageTitle, SectionTitle } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 import { TabScreen } from '../../common/TabScreen';
 import { OfferEditorSheet } from '../components/OfferEditorSheet';
@@ -26,6 +27,7 @@ export function MasterServicesScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const tr = useTranslate();
+  const { t } = useTranslation();
   const offers = useMasterOffers();
   const points = useServicePoints();
   const catalog = useCatalog();
@@ -58,23 +60,23 @@ export function MasterServicesScreen() {
   };
 
   const save = (value: OfferFormValue) => {
-    const onError = () => Alert.alert('Could not save the service', 'Please check the fields and try again.');
+    const onError = () => Alert.alert(t('master.services.saveError'), t('master.services.saveErrorText'));
     if (editing) updateOffer.mutate({ offerId: editing.id, ...toUpdateRequest(value) }, { onSuccess: close, onError });
     else createOffer.mutate(toCreateRequest(value), { onSuccess: close, onError });
   };
 
   const confirmDelete = (offer: OfferResponse) =>
-    Alert.alert('Delete this service?', `${tr(offer.serviceName)} will disappear from your profile.`, [
-      { text: 'Keep', style: 'cancel' },
+    Alert.alert(t('master.services.deleteTitle'), t('master.services.deleteText', { name: tr(offer.serviceName) }), [
+      { text: t('common.keep'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('master.services.delete'),
         style: 'destructive',
         onPress: () =>
           deleteOffer.mutate(offer.id, {
             onError: e =>
               Alert.alert(
-                'Could not delete',
-                e instanceof ApiError && e.isConflict ? 'This service has upcoming bookings.' : 'Please try again.',
+                t('master.services.deleteError'),
+                e instanceof ApiError && e.isConflict ? t('master.services.hasBookings') : t('common.pleaseTryAgain'),
               ),
           }),
       },
@@ -91,7 +93,7 @@ export function MasterServicesScreen() {
           <Pressable
             onPress={openAdd}
             accessibilityRole="button"
-            accessibilityLabel="Add a service"
+            accessibilityLabel={t('master.offer.addTitle')}
             style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
           >
             <Plus size={26} color={colors.background} />
@@ -99,18 +101,18 @@ export function MasterServicesScreen() {
         )
       }
     >
-      <PageTitle title="My Services" subtitle="What clients can book with you" />
+      <PageTitle title={t('master.services.title')} subtitle={t('master.services.subtitle')} />
 
       {offers.isPending ? (
         <LoadingState />
       ) : offers.isError ? (
-        <ErrorState text="Couldn't load your services. Try again" onRetry={() => offers.refetch()} />
+        <ErrorState text={t('master.services.loadError')} onRetry={() => offers.refetch()} />
       ) : groups.length === 0 ? (
         <EmptyState
           Icon={Scissors}
-          title="No services yet"
-          text="Add your first service so clients can find and book you."
-          action={<Button label="Add a service" onPress={openAdd} style={styles.stretch} />}
+          title={t('master.services.emptyTitle')}
+          text={t('master.services.emptyText')}
+          action={<Button label={t('master.offer.addTitle')} onPress={openAdd} style={styles.stretch} />}
         />
       ) : (
         groups.map(([id, group]) => (

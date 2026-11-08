@@ -91,10 +91,10 @@ function ProfileRoute({ navigation }: AnyTabProps) {
 const ClientTab = createBottomTabNavigator<MainTabParamList>();
 
 const CLIENT_TABS: Record<keyof MainTabParamList, TabSpec> = {
-  Discover: svgTab('Map', TabMap, TabMapActive),
-  Bookings: svgTab('Bookings', TabBookings, TabBookingsActive),
-  Favorites: svgTab('Favorites', TabFavorites, TabFavoritesActive),
-  Profile: svgTab('Profile', TabProfile, TabProfileActive),
+  Discover: svgTab('nav.map', TabMap, TabMapActive),
+  Bookings: svgTab('nav.bookings', TabBookings, TabBookingsActive),
+  Favorites: svgTab('nav.favorites', TabFavorites, TabFavoritesActive),
+  Profile: svgTab('nav.profile', TabProfile, TabProfileActive),
 };
 
 const renderClientBar = (props: BarProps) => <BottomTabBar {...props} tabs={CLIENT_TABS} />;
@@ -150,11 +150,11 @@ function MasterTabs() {
   const bookings = useBookings('as-master');
   const pending = (bookings.data ?? []).filter(b => masterTabOf(b) === 'requests').length;
   const tabs: Record<keyof MasterTabParamList, TabSpec> = {
-    Calendar: tab('Calendar', CalendarDays),
-    MasterBookings: tab('Bookings', NotebookTabs),
-    Clients: tab('Clients', Users),
-    Services: tab('Services', Scissors),
-    Profile: tab('Profile', User),
+    Calendar: tab('nav.calendar', CalendarDays),
+    MasterBookings: tab('nav.bookings', NotebookTabs),
+    Clients: tab('nav.clients', Users),
+    Services: tab('nav.services', Scissors),
+    Profile: tab('nav.profile', User),
   };
   const renderBar = (props: BarProps) => <BottomTabBar {...props} tabs={tabs} badges={{ MasterBookings: pending }} />;
   return (
@@ -177,11 +177,11 @@ function AdminTabs() {
   const requests = useAdminCatalogRequests('PENDING');
   const reports = useAdminReports('OPEN');
   const tabs: Record<keyof AdminTabParamList, TabSpec> = {
-    Requests: tab('Requests', ClipboardList),
-    Reports: tab('Reports', Flag),
-    Stats: tab('Stats', BarChart3),
-    Users: tab('Users', Users),
-    Profile: tab('Profile', User),
+    Requests: tab('nav.requests', ClipboardList),
+    Reports: tab('nav.reports', Flag),
+    Stats: tab('nav.stats', BarChart3),
+    Users: tab('nav.users', Users),
+    Profile: tab('nav.profile', User),
   };
   const renderBar = (props: BarProps) => (
     <BottomTabBar

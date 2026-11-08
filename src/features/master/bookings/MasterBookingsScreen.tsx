@@ -9,6 +9,7 @@ import { Alert, View } from 'react-native';
 import { getBookingConflict, type BookingDetailResponse } from '../../../api';
 import { useApproveBooking, useBookings, useMarkBookingMissed, useRejectBooking } from '../../../query';
 import { EmptyState, ErrorState, LoadingState, PageTitle, SectionTitle, Segmented } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 import { endOf } from '../../bookings/bookingGroups';
 import { TabScreen } from '../../common/TabScreen';
@@ -26,14 +27,9 @@ export function masterTabOf(b: BookingDetailResponse, now = new Date()): Tab {
   return 'history';
 }
 
-const EMPTY: Record<Tab, string> = {
-  requests: 'No new booking requests.',
-  upcoming: 'No upcoming visits.',
-  history: 'No past bookings yet.',
-};
-
 export function MasterBookingsScreen() {
   const styles = useStyles();
+  const { t } = useTranslation();
   const bookings = useBookings('as-master');
   const approve = useApproveBooking();
   const reject = useRejectBooking();
@@ -61,35 +57,33 @@ export function MasterBookingsScreen() {
     approve.mutate(b.id, {
       onError: e =>
         Alert.alert(
-          'Could not approve',
-          getBookingConflict(e)
-            ? 'This time overlaps another confirmed booking. Decline it or reschedule the other visit.'
-            : 'Please try again.',
+          t('master.bookings.approveError'),
+          getBookingConflict(e) ? t('master.bookings.approveOverlap') : t('common.pleaseTryAgain'),
         ),
     });
 
   const onReject = (b: BookingDetailResponse) =>
-    Alert.alert('Decline this request?', `${b.clientName} will be notified.`, [
-      { text: 'Keep', style: 'cancel' },
+    Alert.alert(t('master.bookings.declineTitle'), t('master.bookings.declineText', { name: b.clientName }), [
+      { text: t('common.keep'), style: 'cancel' },
       {
-        text: 'Decline',
+        text: t('master.booking.decline'),
         style: 'destructive',
         onPress: () =>
           reject.mutate(b.id, {
-            onError: () => Alert.alert('Could not decline', 'Please try again.'),
+            onError: () => Alert.alert(t('master.bookings.declineError'), t('common.pleaseTryAgain')),
           }),
       },
     ]);
 
   const onMarkMissed = (b: BookingDetailResponse) =>
-    Alert.alert('Mark as no-show?', `${b.clientName} didn't come to the appointment.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('master.bookings.noShowTitle'), t('master.bookings.noShowText', { name: b.clientName }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Mark no-show',
+        text: t('master.bookings.noShowConfirm'),
         style: 'destructive',
         onPress: () =>
           markMissed.mutate(b.id, {
-            onError: () => Alert.alert('Could not update', 'Please try again.'),
+            onError: () => Alert.alert(t('master.bookings.updateError'), t('common.pleaseTryAgain')),
           }),
       },
     ]);
@@ -101,23 +95,23 @@ export function MasterBookingsScreen() {
         bookings.refetch();
       }}
     >
-      <PageTitle title="Bookings" subtitle="Requests and visits from your clients" />
+      <PageTitle title={t('master.bookings.title')} subtitle={t('master.bookings.subtitle')} />
       <Segmented
         value={tab}
         onChange={setTab}
         options={[
-          { key: 'requests', label: `Requests (${byTab.requests.length})` },
-          { key: 'upcoming', label: `Upcoming (${byTab.upcoming.length})` },
-          { key: 'history', label: 'History' },
+          { key: 'requests', label: t('master.bookings.tabs.requests', { count: byTab.requests.length }) },
+          { key: 'upcoming', label: t('master.bookings.tabs.upcoming', { count: byTab.upcoming.length }) },
+          { key: 'history', label: t('master.bookings.tabs.history') },
         ]}
       />
 
       {bookings.isPending ? (
         <LoadingState />
       ) : bookings.isError ? (
-        <ErrorState text="Couldn't load bookings. Try again" onRetry={() => bookings.refetch()} />
+        <ErrorState text={t('master.bookings.loadError')} onRetry={() => bookings.refetch()} />
       ) : days.length === 0 ? (
-        <EmptyState Icon={CalendarX2} title={EMPTY[tab]} text="New bookings appear here and in your Telegram chat." />
+        <EmptyState Icon={CalendarX2} title={t(`master.bookings.empty.${tab}`)} text={t('master.bookings.emptyText')} />
       ) : (
         days.map(([key, items]) => (
           <View key={key} style={styles.day}>

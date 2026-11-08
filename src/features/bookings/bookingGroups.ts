@@ -8,6 +8,8 @@
  * backend's 15-minute sweep resolves it.
  */
 import type { BookingDetailResponse, BookingStatus } from '../../api';
+import { i18n } from '../../i18n';
+import * as dates from '../../i18n/dates';
 
 export type BookingTab = 'upcoming' | 'past' | 'cancelled';
 
@@ -58,34 +60,22 @@ export function statusInfo(
   status: BookingStatus,
   perspective: 'client' | 'master' = 'client',
 ): { label: string; tone: StatusTone } {
-  if (perspective === 'master') {
-    if (status === 'PENDING') return { label: 'New request', tone: 'pending' };
-    if (status === 'REJECTED') return { label: 'Declined', tone: 'muted' };
-    if (status === 'MISSED') return { label: 'No-show', tone: 'danger' };
-  }
-  switch (status) {
-    case 'SCHEDULED':
-      return { label: 'Confirmed', tone: 'success' };
-    case 'PENDING':
-      return { label: 'Awaiting confirmation', tone: 'pending' };
-    case 'COMPLETED':
-      return { label: 'Completed', tone: 'success' };
-    case 'MISSED':
-      return { label: 'Missed', tone: 'danger' };
-    case 'REJECTED':
-      return { label: 'Declined by master', tone: 'danger' };
-    case 'CANCELED':
-      return { label: 'Cancelled', tone: 'muted' };
-  }
+  const label =
+    perspective === 'master' && (status === 'PENDING' || status === 'REJECTED' || status === 'MISSED')
+      ? i18n.t(`status.master.${status}`)
+      : i18n.t(`status.client.${status}`);
+  return { label, tone: TONES[perspective === 'master' && status === 'REJECTED' ? 'MASTER_REJECTED' : status] };
 }
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const WEEKDAYS_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const MONTHS_LONG = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
+const TONES: Record<BookingStatus | 'MASTER_REJECTED', StatusTone> = {
+  SCHEDULED: 'success',
+  PENDING: 'pending',
+  COMPLETED: 'success',
+  MISSED: 'danger',
+  REJECTED: 'danger',
+  MASTER_REJECTED: 'muted',
+  CANCELED: 'muted',
+};
 
 function dayDiff(date: Date, now: Date): number {
   const a = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
@@ -93,33 +83,41 @@ function dayDiff(date: Date, now: Date): number {
   return Math.round((a - b) / 86_400_000);
 }
 
-/** Badge next to "Next appointment": `Today`, `Tomorrow`, `In 5 days`, `Thu 24 Oct`. */
+/** Badge next to "Next appointment": `Today`, `Tomorrow`, `In 5 days`, `Thu, Oct 24` (localized). */
 export function relativeDayBadge(b: BookingDetailResponse, now = new Date()): string {
   const start = startOf(b);
   const diff = dayDiff(start, now);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Tomorrow';
-  if (diff > 1 && diff < 7) return `In ${diff} days`;
-  return `${WEEKDAYS[start.getDay()]} ${start.getDate()} ${MONTHS[start.getMonth()]}`;
+  if (diff === 0) return i18n.t('dates.today');
+  if (diff === 1) return i18n.t('dates.tomorrow');
+  if (diff > 1 && diff < 7) return i18n.t('dates.inDays', { count: diff });
+  return dates.weekdayDayMonth(start);
 }
 
 /** `{ day: 'Tomorrow, Thu Oct 24', time: '15:00' }` (hero card) */
 export function heroDateParts(b: BookingDetailResponse, now = new Date()): { day: string; time: string } {
   const start = startOf(b);
   const diff = dayDiff(start, now);
-  const base = `${WEEKDAYS[start.getDay()]} ${MONTHS[start.getMonth()]} ${start.getDate()}`;
-  const prefix = diff === 0 ? 'Today, ' : diff === 1 ? 'Tomorrow, ' : '';
-  return { day: prefix + base, time: `${pad(start.getHours())}:${pad(start.getMinutes())}` };
+  const base = dates.weekdayDayMonth(start);
+  const day =
+    diff === 0
+      ? i18n.t('dates.todayPrefix', { date: base })
+      : diff === 1
+      ? i18n.t('dates.tomorrowPrefix', { date: base })
+      : base;
+  return { day, time: `${pad(start.getHours())}:${pad(start.getMinutes())}` };
 }
 
 /** `Friday, Nov 1 • 11:30` (compact cards) */
 export function compactDate(b: BookingDetailResponse): string {
   const start = startOf(b);
-  return `${WEEKDAYS_LONG[start.getDay()]}, ${MONTHS[start.getMonth()]} ${start.getDate()} • ${pad(start.getHours())}:${pad(start.getMinutes())}`;
+  return i18n.t('dates.dateTime', {
+    date: `${dates.weekdayLong(start)}, ${dates.dayMonthShort(start)}`,
+    time: `${pad(start.getHours())}:${pad(start.getMinutes())}`,
+  });
 }
 
 /** `November 2026` */
 export function monthLabel(b: BookingDetailResponse): string {
   const start = startOf(b);
-  return `${MONTHS_LONG[start.getMonth()]} ${start.getFullYear()}`;
+  return dates.monthYear(start);
 }

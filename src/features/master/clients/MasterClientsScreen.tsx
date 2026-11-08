@@ -23,9 +23,9 @@ import {
   Tag,
   TextField,
 } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 import { TabScreen } from '../../common/TabScreen';
-import { plural } from '../../master-profile/profileFormat';
 import { ClientSheet } from '../components/ClientSheet';
 import { shortDate, timeOf } from '../masterDates';
 import {
@@ -37,14 +37,11 @@ import {
   type ClientSummary,
 } from './clientSummary';
 
-const SORTS: { key: ClientSort; label: string }[] = [
-  { key: 'recent', label: 'Recent' },
-  { key: 'alphabet', label: 'A–Z' },
-  { key: 'revenue', label: 'Revenue' },
-];
+const SORTS: ClientSort[] = ['recent', 'alphabet', 'revenue'];
 
 export function MasterClientsScreen() {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const tr = useTranslate();
   const bookings = useBookings('as-master');
@@ -58,7 +55,8 @@ export function MasterClientsScreen() {
   const visible = useMemo(() => filterClients(clients, query, filter, sort), [clients, query, filter, sort]);
   const newCount = clients.filter(c => c.visits === 1).length;
   const loyalCount = clients.filter(c => c.visits >= LOYAL_MIN_VISITS).length;
-  const nextSort = () => setSort(SORTS[(SORTS.findIndex(s => s.key === sort) + 1) % SORTS.length].key);
+  const nextSort = () => setSort(SORTS[(SORTS.indexOf(sort) + 1) % SORTS.length]);
+  const sortLabel = t(`master.clients.sort.${sort}`);
 
   return (
     <TabScreen
@@ -68,17 +66,17 @@ export function MasterClientsScreen() {
       }}
     >
       <PageTitle
-        title="Clients"
-        subtitle={plural(clients.length, 'client')}
+        title={t('master.clients.title')}
+        subtitle={t('master.clients.count', { count: clients.length })}
         right={
           <Pressable
             onPress={nextSort}
             accessibilityRole="button"
-            accessibilityLabel={`Sort: ${SORTS.find(s => s.key === sort)!.label}`}
+            accessibilityLabel={t('master.clients.sortLabel', { sort: sortLabel })}
             style={({ pressed }) => [styles.sort, pressed && styles.pressed]}
           >
             <ArrowUpDown size={14} color={colors.primary} />
-            <Text style={styles.sortText}>{SORTS.find(s => s.key === sort)!.label}</Text>
+            <Text style={styles.sortText}>{sortLabel}</Text>
           </Pressable>
         }
       />
@@ -87,9 +85,9 @@ export function MasterClientsScreen() {
         <TextField
           value={query}
           onChangeText={setQuery}
-          placeholder="Search clients"
+          placeholder={t('master.clients.search')}
           style={styles.search}
-          accessibilityLabel="Search clients"
+          accessibilityLabel={t('master.clients.search')}
         />
         <View style={styles.searchIcon} pointerEvents="none">
           <Search size={16} color={colors.textSecondary} />
@@ -100,21 +98,21 @@ export function MasterClientsScreen() {
         value={filter}
         onChange={setFilter}
         options={[
-          { key: 'all', label: 'All' },
-          { key: 'new', label: `New (${newCount})` },
-          { key: 'loyal', label: `Loyal (${loyalCount})` },
+          { key: 'all', label: t('master.clients.filter.all') },
+          { key: 'new', label: t('master.clients.filter.new', { count: newCount }) },
+          { key: 'loyal', label: t('master.clients.filter.loyal', { count: loyalCount }) },
         ]}
       />
 
       {bookings.isPending ? (
         <LoadingState />
       ) : bookings.isError ? (
-        <ErrorState text="Couldn't load clients. Try again" onRetry={() => bookings.refetch()} />
+        <ErrorState text={t('master.clients.loadError')} onRetry={() => bookings.refetch()} />
       ) : visible.length === 0 ? (
         <EmptyState
           Icon={Users}
-          title={clients.length ? 'No clients match' : 'No clients yet'}
-          text={clients.length ? undefined : 'Clients appear here after their first completed visit.'}
+          title={clients.length ? t('master.clients.noMatch') : t('master.clients.emptyTitle')}
+          text={clients.length ? undefined : t('master.clients.emptyText')}
         />
       ) : (
         <View style={styles.list}>
@@ -150,6 +148,7 @@ function ClientCard({
   onOpenProfile: () => void;
 }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   return (
     <Card style={styles.card}>
@@ -165,16 +164,16 @@ function ClientCard({
             <Text style={styles.name} numberOfLines={1}>
               {c.name}
             </Text>
-            {c.visits >= LOYAL_MIN_VISITS && <Tag label="Loyal" tone="success" />}
-            {c.visits === 1 && <Tag label="New" />}
+            {c.visits >= LOYAL_MIN_VISITS && <Tag label={t('master.clients.loyal')} tone="success" />}
+            {c.visits === 1 && <Tag label={t('master.clients.new')} />}
           </View>
           <Text style={styles.meta} numberOfLines={1}>
-            Last {shortDate(c.lastVisit)} • {lastService}
+            {t('master.clients.last', { date: shortDate(c.lastVisit), service: lastService })}
           </Text>
         </View>
         <View style={styles.stats}>
           <Text style={styles.revenue}>{formatPrice(c.revenue)}</Text>
-          <Text style={styles.meta}>{plural(c.visits, 'visit')}</Text>
+          <Text style={styles.meta}>{t('master.clients.visits', { count: c.visits })}</Text>
         </View>
         <ChevronDown size={16} color={colors.textSecondary} style={expanded ? styles.rotated : undefined} />
       </Pressable>
@@ -185,6 +184,7 @@ function ClientCard({
 
 function VisitHistory({ client }: { client: ClientSummary }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const tr = useTranslate();
   // The username is on the client profile, not on bookings.
@@ -210,7 +210,7 @@ function VisitHistory({ client }: { client: ClientSummary }) {
       ))}
       {!!profile.data?.username && (
         <Button
-          label="Message in Telegram"
+          label={t('master.client.message')}
           variant="secondary"
           compact
           icon={<Send size={15} color={colors.text} />}

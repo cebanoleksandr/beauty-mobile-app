@@ -18,6 +18,7 @@ import SparklesIcon from '../../assets/icons/bookings/sparkles.svg';
 import { ApiError, type BookingDetailResponse } from '../../api';
 import { useBookings, useCancelBooking } from '../../query';
 import { openDirectionsTo } from '../../shared/openDirections';
+import { useTranslation } from '../../i18n';
 import { makeStyles, useTheme } from '../../theme';
 import { DiscoverHeader } from '../discover/components/DiscoverHeader';
 import { canCancel, groupBookings, monthLabel, relativeDayBadge, type BookingTab } from './bookingGroups';
@@ -29,14 +30,11 @@ interface BookingsScreenProps {
   onFindMaster: () => void;
 }
 
-const TABS: { key: BookingTab; label: string }[] = [
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'past', label: 'Past' },
-  { key: 'cancelled', label: 'Cancelled' },
-];
+const TABS: BookingTab[] = ['upcoming', 'past', 'cancelled'];
 
 export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const bookings = useBookings('as-client');
   const cancelBooking = useCancelBooking();
@@ -47,17 +45,17 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
   const list = groups[tab];
 
   const confirmCancel = (b: BookingDetailResponse) =>
-    Alert.alert('Cancel this booking?', `${b.masterName} will be notified and the time will be released.`, [
-      { text: 'Keep', style: 'cancel' },
+    Alert.alert(t('bookings.cancelTitle'), t('bookings.cancelText', { name: b.masterName }), [
+      { text: t('common.keep'), style: 'cancel' },
       {
-        text: 'Cancel booking',
+        text: t('bookings.cancelConfirm'),
         style: 'destructive',
         onPress: () =>
           cancelBooking.mutate(b.id, {
             onError: e =>
               Alert.alert(
-                'Could not cancel',
-                e instanceof ApiError && e.isConflict ? 'This booking can no longer be cancelled.' : 'Please try again.',
+                t('bookings.cancelError'),
+                e instanceof ApiError && e.isConflict ? t('bookings.cancelTooLate') : t('common.pleaseTryAgain'),
               ),
           }),
       },
@@ -95,22 +93,22 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
         }
       >
         <Text style={styles.title} accessibilityRole="header">
-          My Bookings
+          {t('bookings.title')}
         </Text>
 
         <View style={styles.segments} accessibilityRole="tablist">
-          {TABS.map(t => {
-            const active = t.key === tab;
+          {TABS.map(key => {
+            const active = key === tab;
             return (
               <Pressable
-                key={t.key}
-                onPress={() => setTab(t.key)}
+                key={key}
+                onPress={() => setTab(key)}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
                 style={[styles.segment, active && styles.segmentActive]}
               >
                 <Text style={[styles.segmentLabel, active && styles.segmentLabelActive]}>
-                  {t.label} <Text style={styles.segmentCount}>({groups[t.key].length})</Text>
+                  {t(`bookings.tabs.${key}`)} <Text style={styles.segmentCount}>({groups[key].length})</Text>
                 </Text>
               </Pressable>
             );
@@ -121,7 +119,7 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
           <ActivityIndicator color={colors.primary} style={styles.loader} />
         ) : bookings.isError ? (
           <Pressable onPress={() => bookings.refetch()} accessibilityRole="button" style={styles.loader}>
-            <Text style={styles.link}>Couldn't load bookings. Try again</Text>
+            <Text style={styles.link}>{t('bookings.loadError')}</Text>
           </Pressable>
         ) : tab === 'upcoming' ? (
           <>
@@ -130,7 +128,7 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
                     <View style={styles.sectionDot} />
-                    <Text style={styles.sectionTitle}>Next appointment</Text>
+                    <Text style={styles.sectionTitle}>{t('bookings.next')}</Text>
                   </View>
                   <View style={styles.dayBadge}>
                     <Text style={styles.dayBadgeText}>{relativeDayBadge(next)}</Text>
@@ -143,7 +141,7 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
             {later.length > 0 && (
               <View style={[styles.section, styles.sectionSpaced]}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Upcoming later</Text>
+                  <Text style={styles.sectionTitle}>{t('bookings.later')}</Text>
                   <Text style={styles.sectionMeta}>{monthLabel(later[0])}</Text>
                 </View>
                 {later.map(b => (
@@ -156,14 +154,14 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
               <View style={styles.calloutIcon}>
                 <SparklesIcon />
               </View>
-              <Text style={styles.calloutTitle}>{next ? 'Plan your next visit' : 'No upcoming appointments'}</Text>
-              <Text style={styles.calloutText}>Find a master nearby and pick a time that suits you.</Text>
+              <Text style={styles.calloutTitle}>{next ? t('bookings.planNext') : t('bookings.noUpcoming')}</Text>
+              <Text style={styles.calloutText}>{t('bookings.calloutText')}</Text>
               <Pressable
                 onPress={onFindMaster}
                 accessibilityRole="button"
                 style={({ pressed }) => [styles.calloutButton, pressed && styles.pressed]}
               >
-                <Text style={styles.calloutButtonText}>Book a New Treatment</Text>
+                <Text style={styles.calloutButtonText}>{t('bookings.bookNew')}</Text>
               </Pressable>
             </View>
           </>
@@ -174,7 +172,7 @@ export function BookingsScreen({ onOpenMaster, onFindMaster }: BookingsScreenPro
             ))}
           </View>
         ) : (
-          <Text style={styles.empty}>{tab === 'past' ? 'No past bookings yet.' : 'No cancelled bookings.'}</Text>
+          <Text style={styles.empty}>{tab === 'past' ? t('bookings.noPast') : t('bookings.noCancelled')}</Text>
         )}
       </ScrollView>
       <RatingSheet booking={ratingFor} target="master" onClose={() => setRatingFor(null)} />

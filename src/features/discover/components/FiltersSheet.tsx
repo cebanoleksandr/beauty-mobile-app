@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMasterSearch } from '../../../query';
 import { formatPrice } from '../../../shared/format';
 import { FilterChip, RadioGroup, RangeSlider, type RadioOption } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 import { useFavoriteIds } from '../../favorites/favoritesStore';
 import {
@@ -31,11 +32,11 @@ import {
 } from '../searchFilters';
 import { CategoryAccordion } from './CategoryAccordion';
 
-const SORT_OPTIONS: readonly RadioOption<SortBy>[] = [
-  { value: 'geo_distance', label: 'Closest to me' },
-  { value: 'rating_desc', label: 'Highest rated' },
-  { value: 'price_asc', label: 'Price: low to high' },
-  { value: 'price_desc', label: 'Price: high to low' },
+const SORT_OPTIONS: readonly { value: SortBy; labelKey: string }[] = [
+  { value: 'geo_distance', labelKey: 'discover.sort.distance' },
+  { value: 'rating_desc', labelKey: 'discover.sort.rating' },
+  { value: 'price_asc', labelKey: 'discover.sort.priceAsc' },
+  { value: 'price_desc', labelKey: 'discover.sort.priceDesc' },
 ];
 
 interface FiltersSheetProps {
@@ -50,6 +51,8 @@ interface FiltersSheetProps {
 
 export function FiltersSheet({ visible, value, query, center, onApply, onClose }: FiltersSheetProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
+  const sortOptions: RadioOption<SortBy>[] = SORT_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }));
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const favoriteIds = useFavoriteIds();
@@ -70,10 +73,10 @@ export function FiltersSheet({ visible, value, query, center, onApply, onClose }
   const count = preview.data ? countMasters(applyClientFilters(preview.data, draft, favoriteIds)) : null;
   const ctaLabel =
     count === null
-      ? 'Apply filters'
+      ? t('discover.filters.apply')
       : count === 0
-        ? 'No masters found'
-        : `Show ${count} master${count === 1 ? '' : 's'}`;
+      ? t('discover.filters.none')
+      : t('discover.filters.show', { count });
 
   const update = (patch: Partial<SearchFilters>) => setDraft(d => ({ ...d, ...patch }));
   const toggleService = (id: string) =>
@@ -84,7 +87,7 @@ export function FiltersSheet({ visible, value, query, center, onApply, onClose }
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close filters" />
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('discover.filters.closeFilters')} />
       <View style={[styles.sheet, { top: insets.top + 24 }]}>
         <View style={styles.handle} />
 
@@ -92,14 +95,14 @@ export function FiltersSheet({ visible, value, query, center, onApply, onClose }
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Close"
+            accessibilityLabel={t('common.close')}
             hitSlop={8}
             style={({ pressed }) => [styles.close, pressed && styles.pressed]}
           >
             <X size={20} color={colors.text} />
           </Pressable>
           <Text style={styles.title} accessibilityRole="header">
-            Filters
+            {t('discover.filters.title')}
           </Text>
           <Pressable
             onPress={() => setDraft(DEFAULT_FILTERS)}
@@ -107,21 +110,21 @@ export function FiltersSheet({ visible, value, query, center, onApply, onClose }
             hitSlop={8}
             style={({ pressed }) => [styles.resetButton, pressed && styles.pressed]}
           >
-            <Text style={styles.reset}>Reset all</Text>
+            <Text style={styles.reset}>{t('discover.filters.reset')}</Text>
           </Pressable>
         </View>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Section title="Sort by">
+          <Section title={t('discover.filters.sortBy')}>
             <RadioGroup
               value={draft.sortBy}
-              options={SORT_OPTIONS}
+              options={sortOptions}
               onChange={sortBy => update({ sortBy })}
-              accessibilityLabel="Sort by"
+              accessibilityLabel={t('discover.filters.sortBy')}
             />
           </Section>
 
-          <Section title="Price">
+          <Section title={t('discover.filters.price')}>
             <Text style={styles.priceRange}>
               {formatPrice(draft.priceMin)} — {formatPrice(draft.priceMax)}
             </Text>
@@ -131,7 +134,7 @@ export function FiltersSheet({ visible, value, query, center, onApply, onClose }
               step={PRICE_STEP}
               value={[draft.priceMin, draft.priceMax]}
               onChange={([priceMin, priceMax]) => update({ priceMin, priceMax })}
-              labels={['Minimum price', 'Maximum price']}
+              labels={[t('discover.filters.minPrice'), t('discover.filters.maxPrice')]}
             />
             <View style={styles.priceBounds}>
               <Text style={styles.priceBound}>{formatPrice(PRICE_MIN)}</Text>
@@ -139,7 +142,7 @@ export function FiltersSheet({ visible, value, query, center, onApply, onClose }
             </View>
           </Section>
 
-          <Section title="Search radius">
+          <Section title={t('discover.filters.radius')}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -149,7 +152,7 @@ export function FiltersSheet({ visible, value, query, center, onApply, onClose }
               {RADIUS_OPTIONS.map(radius => (
                 <FilterChip
                   key={radius}
-                  label={`${radius / 1000} km`}
+                  label={t('discover.filters.km', { value: radius / 1000 })}
                   selected={draft.radiusMeters === radius}
                   onPress={() => update({ radiusMeters: radius })}
                 />
@@ -157,18 +160,18 @@ export function FiltersSheet({ visible, value, query, center, onApply, onClose }
             </ScrollView>
           </Section>
 
-          <Section title="Categories">
+          <Section title={t('discover.filters.categories')}>
             <CategoryAccordion selected={draft.categoryIds} onToggle={toggleService} />
           </Section>
 
           <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Favorite masters only</Text>
+            <Text style={styles.switchLabel}>{t('discover.filters.favoritesOnly')}</Text>
             <Switch
               value={draft.favoritesOnly}
               onValueChange={favoritesOnly => update({ favoritesOnly })}
               trackColor={{ true: colors.primary, false: colors.surfaceVariant }}
               thumbColor={colors.text}
-              accessibilityLabel="Favorite masters only"
+              accessibilityLabel={t('discover.filters.favoritesOnly')}
             />
           </View>
         </ScrollView>

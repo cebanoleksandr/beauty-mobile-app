@@ -18,6 +18,7 @@ import TelegramBadgeIcon from '../../assets/icons/telegram-badge.svg';
 import VerifiedIcon from '../../assets/icons/verified.svg';
 import { ApiError, resolveApiUrl, userService, type UserResponse } from '../../api';
 import { useSignOut } from '../../auth';
+import { useTranslation } from '../../i18n';
 import { useMe, useSwitchMode } from '../../query';
 import { AmbientGlow, CircleIconButton, DotBadge } from '../../shared/ui';
 import { makeStyles } from '../../theme';
@@ -34,6 +35,7 @@ interface RoleSelectScreenProps {
 
 export function RoleSelectScreen({ onCompleted, onBecomeMaster }: RoleSelectScreenProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { data: me } = useMe();
   const signOut = useSignOut();
@@ -51,17 +53,13 @@ export function RoleSelectScreen({ onCompleted, onBecomeMaster }: RoleSelectScre
       onCompleted(role);
     } catch (e) {
       if (role === 'MASTER' && e instanceof ApiError && e.status === 400) onBecomeMaster();
-      else Alert.alert('Could not save your choice', 'Please try again.');
+      else Alert.alert(t('roleSelect.saveError'), t('common.pleaseTryAgain'));
     } finally {
       setSaving(false);
     }
   };
 
-  const onHelp = () =>
-    Alert.alert(
-      'Choosing a role',
-      'Clients find masters and book appointments. Masters publish services and manage their schedule. You can switch anytime in your profile.',
-    );
+  const onHelp = () => Alert.alert(t('roleSelect.helpTitle'), t('roleSelect.helpText'));
 
   return (
     <View style={styles.screen}>
@@ -69,9 +67,13 @@ export function RoleSelectScreen({ onCompleted, onBecomeMaster }: RoleSelectScre
       <AmbientGlow size={520} color="rgba(80, 40, 174, 0.1)" style={styles.glowBottom} />
 
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <CircleIconButton icon={<ChevronLeftIcon />} onPress={signOut} accessibilityLabel="Back to sign in" />
-        <DotBadge label="Step 1 of 2" />
-        <CircleIconButton icon={<HelpIcon />} onPress={onHelp} accessibilityLabel="Help" />
+        <CircleIconButton
+          icon={<ChevronLeftIcon />}
+          onPress={signOut}
+          accessibilityLabel={t('roleSelect.backToSignIn')}
+        />
+        <DotBadge label={t('roleSelect.step')} />
+        <CircleIconButton icon={<HelpIcon />} onPress={onHelp} accessibilityLabel={t('common.help')} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -79,39 +81,38 @@ export function RoleSelectScreen({ onCompleted, onBecomeMaster }: RoleSelectScre
 
         <View style={styles.titleBlock}>
           <Text style={styles.title} accessibilityRole="header">
-            How will you use <Text style={styles.titleAccent}>Masters</Text>?
+            {t('roleSelect.titleBefore')}
+            <Text style={styles.titleAccent}>{t('common.brand')}</Text>
+            {t('roleSelect.titleAfter')}
           </Text>
-          <Text style={styles.lead}>
-            Select your account type to personalize your experience. You can switch or add another role later
-            in settings.
-          </Text>
+          <Text style={styles.lead}>{t('roleSelect.lead')}</Text>
         </View>
 
         <View style={styles.cards} accessibilityRole="radiogroup">
           <RoleCard
-            title="I'm a client"
-            subtitle="Find masters & book appointments"
-            badge="Default"
+            title={t('roleSelect.client.title')}
+            subtitle={t('roleSelect.client.subtitle')}
+            badge={t('roleSelect.client.badge')}
             badgeTone="primary"
             Icon={SparklesIcon}
             features={[
-              { Icon: CompassIcon, text: 'Explore top stylists, estheticians & salons' },
-              { Icon: ClockIcon, text: 'Instant priority booking & secure deposits' },
-              { Icon: GalleryIcon, text: 'Verified editorial portfolios & client reviews' },
+              { Icon: CompassIcon, text: t('roleSelect.client.f1') },
+              { Icon: ClockIcon, text: t('roleSelect.client.f2') },
+              { Icon: GalleryIcon, text: t('roleSelect.client.f3') },
             ]}
             selected={role === 'CLIENT'}
             onSelect={() => setRole('CLIENT')}
           />
           <RoleCard
-            title="I'm a master"
-            subtitle="Showcase my work & get clients"
-            badge="Artisan"
+            title={t('roleSelect.master.title')}
+            subtitle={t('roleSelect.master.subtitle')}
+            badge={t('roleSelect.master.badge')}
             badgeTone="secondary"
             Icon={ScissorsIcon}
             features={[
-              { Icon: BrushIcon, text: 'Custom atelier portfolio & digital rate card' },
-              { Icon: CalendarIcon, text: 'Dynamic schedule & private waitlist management' },
-              { Icon: PaymentsIcon, text: 'Direct client payouts & revenue performance' },
+              { Icon: BrushIcon, text: t('roleSelect.master.f1') },
+              { Icon: CalendarIcon, text: t('roleSelect.master.f2') },
+              { Icon: PaymentsIcon, text: t('roleSelect.master.f3') },
             ]}
             selected={role === 'MASTER'}
             onSelect={() => setRole('MASTER')}
@@ -120,7 +121,7 @@ export function RoleSelectScreen({ onCompleted, onBecomeMaster }: RoleSelectScre
 
         <View style={styles.trust}>
           <SwapIcon />
-          <Text style={styles.trustText}>Switch profiles seamlessly anytime with one tap</Text>
+          <Text style={styles.trustText}>{t('roleSelect.trust')}</Text>
         </View>
       </ScrollView>
 
@@ -132,12 +133,14 @@ export function RoleSelectScreen({ onCompleted, onBecomeMaster }: RoleSelectScre
           accessibilityState={{ busy: saving }}
           style={({ pressed }) => [styles.cta, (pressed || saving) && styles.pressed]}
         >
-          <Text style={styles.ctaLabel}>{role === 'CLIENT' ? 'Continue as Client' : 'Continue as Master'}</Text>
+          <Text style={styles.ctaLabel}>
+            {role === 'CLIENT' ? t('roleSelect.continueClient') : t('roleSelect.continueMaster')}
+          </Text>
           <View style={styles.ctaIcon}>
             <ArrowRightIcon />
           </View>
         </Pressable>
-        <Text style={styles.footnote}>You can change this anytime in your profile settings</Text>
+        <Text style={styles.footnote}>{t('roleSelect.footnote')}</Text>
       </View>
     </View>
   );
@@ -145,6 +148,7 @@ export function RoleSelectScreen({ onCompleted, onBecomeMaster }: RoleSelectScre
 
 function GreetingBadge({ me }: { me: UserResponse }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const photo = resolveApiUrl(me.photoUrl) ?? userService.photoUrl(me.id);
   const name = me.firstName ?? me.username ?? '';
 
@@ -160,10 +164,12 @@ function GreetingBadge({ me }: { me: UserResponse }) {
       </View>
       <View style={styles.greetingText}>
         <View style={styles.greetingRow}>
-          <Text style={styles.greetingName}>Welcome{name ? `, ${name}` : ''}</Text>
+          <Text style={styles.greetingName}>
+            {name ? t('roleSelect.welcomeName', { name }) : t('roleSelect.welcome')}
+          </Text>
           <VerifiedIcon />
         </View>
-        <Text style={styles.greetingStatus}>Telegram connected</Text>
+        <Text style={styles.greetingStatus}>{t('roleSelect.telegramConnected')}</Text>
       </View>
     </View>
   );

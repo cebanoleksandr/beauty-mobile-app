@@ -7,6 +7,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import ChevronLeft from '../../../assets/icons/booking/chevron-left.svg';
 import ChevronRight from '../../../assets/icons/booking/chevron-right.svg';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 import { dayOfMonth, monthShort, monthYear, weekdayShort } from '../bookingSlots';
 
@@ -22,6 +23,7 @@ interface DatePickerProps {
 
 export function DatePicker({ weeks, weekIndex, onWeekChange, selected, bookableDays, onSelect }: DatePickerProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const week = weeks[weekIndex] ?? [];
   const anchor = selected && week.includes(selected) ? selected : week[0];
 
@@ -29,7 +31,7 @@ export function DatePicker({ weeks, weekIndex, onWeekChange, selected, bookableD
     <View style={styles.section}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Select Date</Text>
+          <Text style={styles.title}>{t('booking.selectDate')}</Text>
           {!!anchor && <Text style={styles.subtitle}>{monthYear(anchor)}</Text>}
         </View>
         <View style={styles.nav}>
@@ -37,7 +39,7 @@ export function DatePicker({ weeks, weekIndex, onWeekChange, selected, bookableD
             onPress={() => onWeekChange(weekIndex - 1)}
             disabled={weekIndex === 0}
             accessibilityRole="button"
-            accessibilityLabel="Previous week"
+            accessibilityLabel={t('booking.prevWeek')}
             style={[styles.navButton, weekIndex === 0 && styles.disabled]}
           >
             <ChevronLeft />
@@ -47,7 +49,7 @@ export function DatePicker({ weeks, weekIndex, onWeekChange, selected, bookableD
             onPress={() => onWeekChange(weekIndex + 1)}
             disabled={weekIndex >= weeks.length - 1}
             accessibilityRole="button"
-            accessibilityLabel="Next week"
+            accessibilityLabel={t('booking.nextWeek')}
             style={[styles.navButton, weekIndex >= weeks.length - 1 && styles.disabled]}
           >
             <ChevronRight />

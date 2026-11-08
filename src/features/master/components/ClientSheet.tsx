@@ -10,10 +10,12 @@ import { resolveApiUrl } from '../../../api';
 import { useClientProfile } from '../../../query';
 import { openTelegramProfile } from '../../../shared/openTelegram';
 import { Avatar, BottomSheet, Button, LoadingState } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 
 export function ClientSheet({ clientId, onClose }: { clientId: number | null; onClose: () => void }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const profile = useClientProfile(clientId ?? undefined);
   const data = profile.data;
@@ -30,7 +32,7 @@ export function ClientSheet({ clientId, onClose }: { clientId: number | null; on
             <>
               <Text style={styles.username}>@{data.username}</Text>
               <Button
-                label="Message in Telegram"
+                label={t('master.client.message')}
                 variant="secondary"
                 icon={<Send size={16} color={colors.text} />}
                 onPress={() => openTelegramProfile(data.username)}
@@ -38,7 +40,7 @@ export function ClientSheet({ clientId, onClose }: { clientId: number | null; on
               />
             </>
           ) : (
-            <Text style={styles.username}>No Telegram username</Text>
+            <Text style={styles.username}>{t('master.client.noUsername')}</Text>
           )}
         </View>
       )}

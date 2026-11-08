@@ -28,6 +28,7 @@ import type { Translations } from '../../../api';
 import { useTranslate } from '../../../i18n/language';
 import { useCatalog } from '../../../query';
 import { Checkbox } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 
 // Catalog rows carry no icon; pick one from the English name (same table as the web app).
@@ -60,6 +61,7 @@ interface CategoryAccordionProps {
 
 export function CategoryAccordion({ selected, onToggle }: CategoryAccordionProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const tr = useTranslate();
   const { data: categories = [], isLoading, isError, refetch } = useCatalog();
@@ -78,7 +80,10 @@ export function CategoryAccordion({ selected, onToggle }: CategoryAccordionProps
   if (isError || categories.length === 0) {
     return (
       <Pressable onPress={() => refetch()} accessibilityRole="button">
-        <Text style={styles.empty}>Categories unavailable.{isError ? ' Tap to retry.' : ''}</Text>
+        <Text style={styles.empty}>
+          {t('discover.categoriesUnavailable')}
+          {isError ? t('discover.tapToRetry') : ''}
+        </Text>
       </Pressable>
     );
   }
@@ -109,11 +114,7 @@ export function CategoryAccordion({ selected, onToggle }: CategoryAccordionProps
                   <Text style={styles.countText}>{selectedCount}</Text>
                 </View>
               )}
-              <ChevronDown
-                size={18}
-                color={colors.textSecondary}
-                style={open ? styles.chevronOpen : undefined}
-              />
+              <ChevronDown size={18} color={colors.textSecondary} style={open ? styles.chevronOpen : undefined} />
             </Pressable>
             {open && (
               <View style={styles.services}>

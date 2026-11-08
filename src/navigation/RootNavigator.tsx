@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { DarkTheme, NavigationContainer, type Theme as NavTheme } from '@react-navigation/native';
 import { createNativeStackNavigator, type NativeStackScreenProps } from '@react-navigation/native-stack';
 import { sessionStore, useIsSignedIn, useSessionHydrated } from '../auth';
+import { languagePreference } from '../i18n';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { BookingScreen } from '../features/booking/BookingScreen';
 import { MasterProfileScreen } from '../features/master-profile/MasterProfileScreen';
@@ -40,9 +41,7 @@ function MasterProfileRoute({ navigation, route }: NativeStackScreenProps<RootSt
       masterId={route.params.masterId}
       preview={route.params.preview}
       onBack={() => navigation.goBack()}
-      onBook={(master, service) =>
-        navigation.navigate('Booking', { masterId: master.id, serviceId: service?.id })
-      }
+      onBook={(master, service) => navigation.navigate('Booking', { masterId: master.id, serviceId: service?.id })}
     />
   );
 }
@@ -69,9 +68,10 @@ export function RootNavigator() {
   // Live booking / calendar updates while signed in.
   useRealtimeConnection();
 
-  // Restore the saved session before choosing between Login and the app.
+  // Restore the saved session (and language choice) before choosing between Login and the app.
   useEffect(() => {
     sessionStore.hydrate();
+    languagePreference.hydrate();
   }, []);
 
   const navTheme = useMemo<NavTheme>(

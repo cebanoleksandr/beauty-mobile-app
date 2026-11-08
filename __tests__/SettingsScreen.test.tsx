@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { UserResponse } from '../src/api';
 import { sessionStore } from '../src/auth';
 import { SettingsScreen } from '../src/features/settings/SettingsScreen';
+import { i18n, languagePreference } from '../src/i18n';
 import { ThemeProvider } from '../src/theme';
 
 const baseMe: UserResponse = {
@@ -94,7 +95,7 @@ test('shows backend profile data and none of the design-only rows', async () => 
   expect(all).toContain('Telegram notifications');
   expect(all).toContain('On');
   expect(all).toContain('My master profile');
-  expect(all).not.toMatch(/Phone number|Language|Payment|Help Center|Promotions|Booking reminders/);
+  expect(all).not.toMatch(/Phone number|Payment|Help Center|Promotions|Booking reminders/);
 
   await act(async () => byText(tree, 'My master profile').props.onPress());
   expect(onOpen).toHaveBeenCalledWith(42);
@@ -193,5 +194,22 @@ test('log out asks for confirmation and clears the session', async () => {
   await act(async () => byText(tree, 'Log Out').props.onPress());
   expect(sessionStore.isSignedIn).toBe(false);
   alert.mockRestore();
+  await act(async () => tree.unmount());
+});
+
+test('language: switching to Ukrainian translates the screen and is remembered', async () => {
+  const tree = await render();
+  await act(async () => byText(tree, 'Language').props.onPress());
+  await act(async () => byText(tree, 'Українська').props.onPress());
+  expect(i18n.language).toBe('uk');
+  expect(languagePreference.value).toBe('uk');
+  const all = texts(tree);
+  expect(all).toContain('Налаштування');
+  expect(all).toContain('Редагувати профіль');
+  expect(all).toContain('Вийти');
+  await act(async () => {
+    languagePreference.set('en');
+  });
+  expect(texts(tree)).toContain('Settings');
   await act(async () => tree.unmount());
 });

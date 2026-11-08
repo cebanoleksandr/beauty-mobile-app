@@ -4,12 +4,14 @@ import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BellIcon from '../../../assets/icons/bell.svg';
 import LogoIcon from '../../../assets/icons/logo.svg';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 
 export const HEADER_HEIGHT = 56;
 
 export function DiscoverHeader({ onNotifications }: { onNotifications?: () => void }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.bar, { paddingTop: insets.top, height: HEADER_HEIGHT + insets.top }]}>
@@ -17,13 +19,13 @@ export function DiscoverHeader({ onNotifications }: { onNotifications?: () => vo
         <View style={styles.logo}>
           <LogoIcon />
         </View>
-        <Text style={styles.wordmark}>Masters</Text>
+        <Text style={styles.wordmark}>{t('common.brand')}</Text>
       </View>
       <Pressable
         onPress={onNotifications}
         disabled={!onNotifications}
         accessibilityRole="button"
-        accessibilityLabel="Notifications"
+        accessibilityLabel={t('discover.notifications')}
         style={styles.bell}
       >
         <BellIcon />

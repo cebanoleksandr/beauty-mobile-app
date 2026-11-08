@@ -8,7 +8,9 @@ import { Alert, Text } from 'react-native';
 import { getBookingConflict, type BookingDetailResponse } from '../../../api';
 import { useRescheduleBooking } from '../../../query';
 import { BottomSheet, Button, ChoiceChips, FieldLabel } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
+import { weekdayDayMonth } from '../../../i18n/dates';
 import { addDays, dayKey, hhmm, minutesOf, monthShort, parseDayKey, timeOf, weekdayShort } from '../masterDates';
 
 const DAY_START = 7 * 60;
@@ -18,6 +20,7 @@ const DURATIONS = [15, 30, 45, 60, 75, 90, 120, 150, 180, 240];
 
 export function RescheduleSheet({ booking, onClose }: { booking: BookingDetailResponse | null; onClose: () => void }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const reschedule = useRescheduleBooking();
   const [day, setDay] = useState('');
   const [start, setStart] = useState(0);
@@ -29,10 +32,10 @@ export function RescheduleSheet({ booking, onClose }: { booking: BookingDetailRe
       const d = addDays(today, i);
       return {
         value: dayKey(d),
-        label: i === 0 ? 'Today' : `${weekdayShort(d)} ${d.getDate()} ${monthShort(d)}`,
+        label: i === 0 ? t('dates.today') : `${weekdayShort(d)} ${d.getDate()} ${monthShort(d)}`,
       };
     });
-  }, []);
+  }, [t]);
 
   const times = useMemo(() => {
     const now = new Date();
@@ -56,7 +59,7 @@ export function RescheduleSheet({ booking, onClose }: { booking: BookingDetailRe
   const durations = DURATIONS.includes(booking?.durationMinutes ?? 0)
     ? DURATIONS
     : [...DURATIONS, booking?.durationMinutes ?? 60].sort((a, b) => a - b);
-  const valid = !!day && times.some(t => t.value === start);
+  const valid = !!day && times.some(option => option.value === start);
 
   const save = () => {
     if (!booking || !valid) return;
@@ -70,10 +73,8 @@ export function RescheduleSheet({ booking, onClose }: { booking: BookingDetailRe
         onSuccess: onClose,
         onError: e =>
           Alert.alert(
-            'Could not reschedule',
-            getBookingConflict(e)
-              ? 'This time overlaps another confirmed booking.'
-              : 'Please pick another time and try again.',
+            t('master.reschedule.errorTitle'),
+            getBookingConflict(e) ? t('master.reschedule.overlap') : t('master.reschedule.pickAnother'),
           ),
       },
     );
@@ -84,33 +85,42 @@ export function RescheduleSheet({ booking, onClose }: { booking: BookingDetailRe
       visible={booking !== null}
       onClose={onClose}
       onShow={seed}
-      title="Reschedule"
-      subtitle={booking ? `${booking.clientName} will be notified in Telegram` : undefined}
-      footer={<Button label="Save new time" onPress={save} disabled={!valid} loading={reschedule.isPending} />}
+      title={t('master.booking.reschedule')}
+      subtitle={booking ? t('master.reschedule.notified', { name: booking.clientName }) : undefined}
+      footer={
+        <Button label={t('master.reschedule.save')} onPress={save} disabled={!valid} loading={reschedule.isPending} />
+      }
     >
-      <FieldLabel>Day</FieldLabel>
-      <ChoiceChips options={days} value={day} onChange={setDay} accessibilityLabel="Day" />
-      <FieldLabel>Duration</FieldLabel>
+      <FieldLabel>{t('master.reschedule.days')}</FieldLabel>
+      <ChoiceChips options={days} value={day} onChange={setDay} accessibilityLabel={t('master.reschedule.days')} />
+      <FieldLabel>{t('master.reschedule.duration')}</FieldLabel>
       <ChoiceChips
         options={durations.map(m => ({
           value: m,
-          label: m < 60 ? `${m} min` : hhmm(m).replace(/^0/, ''),
+          label: m < 60 ? t('units.minutes', { value: m }) : hhmm(m).replace(/^0/, ''),
         }))}
         value={duration}
         onChange={setDuration}
-        accessibilityLabel="Duration"
+        accessibilityLabel={t('master.reschedule.duration')}
       />
-      <FieldLabel>Start time</FieldLabel>
+      <FieldLabel>{t('master.reschedule.start')}</FieldLabel>
       {times.length ? (
-        <ChoiceChips options={times} value={start} onChange={setStart} accessibilityLabel="Start time" />
+        <ChoiceChips
+          options={times}
+          value={start}
+          onChange={setStart}
+          accessibilityLabel={t('master.reschedule.start')}
+        />
       ) : (
-        <Text style={styles.hint}>No time left on this day.</Text>
+        <Text style={styles.hint}>{t('master.reschedule.noTime')}</Text>
       )}
       {!!day && valid && (
         <Text style={styles.hint}>
-          {`${weekdayShort(parseDayKey(day))} ${parseDayKey(day).getDate()} ${monthShort(parseDayKey(day))}, ${hhmm(
-            start,
-          )} – ${hhmm(start + duration)}`}
+          {t('booking.appointment', {
+            day: weekdayDayMonth(parseDayKey(day)),
+            start: hhmm(start),
+            end: hhmm(start + duration),
+          })}
         </Text>
       )}
     </BottomSheet>

@@ -14,6 +14,7 @@
  * one active service (ERR_NO_ACTIVE_SERVICES) — without one, choosing Master
  * opens the "Become a master" onboarding instead.
  */
+import { Languages } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -47,7 +48,15 @@ import { resolveApiUrl, userService, type UserContext, type UserResponse } from 
 import { useSignOut } from '../../auth';
 import { useMe, useUpdateMe } from '../../query';
 import { formatRating } from '../../shared/format';
-import { AmbientGlow } from '../../shared/ui';
+import { AmbientGlow, BottomSheet, RadioGroup } from '../../shared/ui';
+import {
+  deviceLanguage,
+  i18n,
+  languagePreference,
+  useLanguagePreference,
+  useTranslation,
+  type LanguagePreference,
+} from '../../i18n';
 import { makeStyles, useTheme } from '../../theme';
 import { SwitchModeSheet } from './SwitchModeSheet';
 
@@ -57,7 +66,9 @@ interface SettingsScreenProps {
   onBecomeMaster?: () => void;
 }
 
-const MODE_LABEL: Record<UserContext, string> = { CLIENT: 'Client', MASTER: 'Master', ADMIN: 'Admin' };
+const modeLabel = (mode: UserContext) => i18n.t(`mode.${mode}`);
+
+const LANGUAGE_OPTIONS: LanguagePreference[] = ['system', 'uk', 'en', 'ru'];
 
 export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: SettingsScreenProps) {
   const styles = useStyles();
@@ -65,19 +76,22 @@ export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: Settings
   const insets = useSafeAreaInsets();
   const { data: me, isPending, isError, refetch } = useMe();
   const signOut = useSignOut();
+  const { t } = useTranslation();
+  const language = useLanguagePreference();
   const [editOpen, setEditOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   const confirmSignOut = () =>
-    Alert.alert('Log out?', 'You will need to sign in with Telegram again.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: signOut },
+    Alert.alert(t('settings.logoutTitle'), t('settings.logoutText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('settings.logoutConfirm'), style: 'destructive', onPress: signOut },
     ]);
 
   return (
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <Text style={styles.headerTitle} accessibilityRole="header">
-          Settings
+          {t('settings.title')}
         </Text>
       </View>
 
@@ -88,7 +102,7 @@ export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: Settings
           ) : (
             isError && (
               <Pressable onPress={() => refetch()} accessibilityRole="button">
-                <Text style={styles.link}>Couldn't load your profile. Try again</Text>
+                <Text style={styles.link}>{t('settings.loadError')}</Text>
               </Pressable>
             )
           )}
@@ -98,28 +112,33 @@ export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: Settings
           <ProfileHeader me={me} />
           <WorkspaceCard me={me} onBecomeMaster={onBecomeMaster} />
 
-          <Group title="Account">
+          <Group title={t('settings.account')}>
             <Row
               Icon={PersonIcon}
-              title="Edit profile"
-              subtitle={displayName(me) || 'Add your name'}
+              title={t('settings.editProfile')}
+              subtitle={displayName(me) || t('settings.addName')}
               onPress={() => setEditOpen(true)}
             />
           </Group>
 
-          <Group title="Notifications">
+          <Group title={t('settings.app')}>
+            <Row
+              Icon={LanguageIcon}
+              title={t('settings.language')}
+              subtitle={languageName(language)}
+              onPress={() => setLanguageOpen(true)}
+            />
+          </Group>
+
+          <Group title={t('settings.notifications')}>
             <Row
               Icon={TelegramIcon}
-              title="Telegram notifications"
-              subtitle={
-                me.telegramLinked
-                  ? 'Booking updates arrive in your Telegram chat'
-                  : 'Start the Slotly bot in Telegram to get booking updates'
-              }
+              title={t('settings.telegramNotifications')}
+              subtitle={me.telegramLinked ? t('settings.notificationsOn') : t('settings.notificationsOff')}
               trailing={
                 <View style={[styles.statusPill, me.telegramLinked ? styles.statusOn : styles.statusOff]}>
                   <Text style={[styles.statusText, me.telegramLinked ? styles.statusTextOn : styles.statusTextOff]}>
-                    {me.telegramLinked ? 'On' : 'Off'}
+                    {me.telegramLinked ? t('settings.on') : t('settings.off')}
                   </Text>
                 </View>
               }
@@ -129,8 +148,8 @@ export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: Settings
           {me.masterProfile && (
             <View style={styles.group}>
               <View style={styles.groupHeaderRow}>
-                <Text style={styles.groupTitle}>Master access</Text>
-                <Text style={styles.groupTag}>Master</Text>
+                <Text style={styles.groupTitle}>{t('settings.masterAccess')}</Text>
+                <Text style={styles.groupTag}>{modeLabel('MASTER')}</Text>
               </View>
               <Pressable
                 onPress={() => onOpenMasterProfile(me.id)}
@@ -142,9 +161,9 @@ export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: Settings
                 </View>
                 <View style={styles.rowText}>
                   <View style={styles.masterTitleRow}>
-                    <Text style={styles.rowTitle}>My master profile</Text>
+                    <Text style={styles.rowTitle}>{t('settings.myMasterProfile')}</Text>
                     <View style={styles.configured}>
-                      <Text style={styles.configuredText}>Configured</Text>
+                      <Text style={styles.configuredText}>{t('settings.configured')}</Text>
                     </View>
                   </View>
                   <Text style={styles.rowSubtitle} numberOfLines={1}>
@@ -162,14 +181,36 @@ export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: Settings
             style={({ pressed }) => [styles.logout, pressed && styles.pressed]}
           >
             <LogoutIcon />
-            <Text style={styles.logoutText}>Log Out</Text>
+            <Text style={styles.logoutText}>{t('settings.logout')}</Text>
           </Pressable>
         </ScrollView>
       )}
 
       {me && <EditProfileSheet me={me} visible={editOpen} onClose={() => setEditOpen(false)} />}
+      <BottomSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} title={t('settings.language')}>
+        <RadioGroup
+          value={language}
+          options={LANGUAGE_OPTIONS.map(value => ({ value, label: languageName(value) }))}
+          onChange={value => {
+            languagePreference.set(value);
+            setLanguageOpen(false);
+          }}
+          accessibilityLabel={t('settings.language')}
+        />
+      </BottomSheet>
     </View>
   );
+}
+
+function languageName(value: LanguagePreference): string {
+  return value === 'system'
+    ? i18n.t('settings.languageSystem', { language: i18n.t(`languages.${deviceLanguage()}`) })
+    : i18n.t(`languages.${value}`);
+}
+
+function LanguageIcon() {
+  const { colors } = useTheme();
+  return <Languages size={18} color={colors.textAccent} strokeWidth={1.75} />;
 }
 
 function displayName(me: UserResponse): string {
@@ -179,11 +220,12 @@ function displayName(me: UserResponse): string {
 function masterSubtitle(me: UserResponse): string {
   const rating = formatRating(me.masterProfile?.rating);
   const bio = me.masterProfile?.bio?.trim();
-  return [rating && `★ ${rating}`, bio || 'View your public profile'].filter(Boolean).join(' • ');
+  return [rating && `★ ${rating}`, bio || i18n.t('settings.viewPublicProfile')].filter(Boolean).join(' • ');
 }
 
 function ProfileHeader({ me }: { me: UserResponse }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const avatar = resolveApiUrl(me.photoUrl) ?? userService.photoUrl(me.id);
   return (
     <View style={styles.profileCard}>
@@ -201,18 +243,18 @@ function ProfileHeader({ me }: { me: UserResponse }) {
       <View style={styles.profileText}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>
-            {displayName(me) || me.username || 'Telegram user'}
+            {displayName(me) || me.username || t('settings.telegramUser')}
           </Text>
           <View style={styles.modePill}>
             <View style={styles.modeDot} />
-            <Text style={styles.modeText}>{MODE_LABEL[me.context]}</Text>
+            <Text style={styles.modeText}>{modeLabel(me.context)}</Text>
           </View>
         </View>
         <View style={styles.handleRow}>
           {!!me.username && <Text style={styles.handle}>@{me.username}</Text>}
           {!!me.username && <Text style={styles.handleDot}>•</Text>}
           <Text style={styles.handleNote} numberOfLines={1}>
-            Signed in with Telegram
+            {t('settings.signedInWithTelegram')}
           </Text>
         </View>
       </View>
@@ -222,6 +264,7 @@ function ProfileHeader({ me }: { me: UserResponse }) {
 
 function WorkspaceCard({ me, onBecomeMaster }: { me: UserResponse; onBecomeMaster?: () => void }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const [sheetTarget, setSheetTarget] = useState<UserContext | null>(null);
   const modes: UserContext[] = me.isAdmin ? ['CLIENT', 'MASTER', 'ADMIN'] : ['CLIENT', 'MASTER'];
   const icons: Partial<Record<UserContext, { on: FC<SvgProps>; off: FC<SvgProps> }>> = {
@@ -234,7 +277,7 @@ function WorkspaceCard({ me, onBecomeMaster }: { me: UserResponse; onBecomeMaste
     if (mode === me.context) return;
     if (mode === 'MASTER' && !me.masterProfile) {
       if (onBecomeMaster) onBecomeMaster();
-      else Alert.alert('No master profile yet', 'Set up your master profile and add a service to use master mode.');
+      else Alert.alert(t('settings.noMasterTitle'), t('settings.noMasterText'));
       return;
     }
     setSheetTarget(mode);
@@ -245,11 +288,11 @@ function WorkspaceCard({ me, onBecomeMaster }: { me: UserResponse; onBecomeMaste
       <View style={styles.workspaceHeader}>
         <View style={styles.workspaceTitleRow}>
           <WorkspaceIcon />
-          <Text style={styles.workspaceTitle}>Current Workspace</Text>
+          <Text style={styles.workspaceTitle}>{t('settings.currentWorkspace')}</Text>
         </View>
         {me.masterProfile && (
           <View style={styles.linkedBadge}>
-            <Text style={styles.linkedText}>Both roles linked</Text>
+            <Text style={styles.linkedText}>{t('settings.bothRoles')}</Text>
           </View>
         )}
       </View>
@@ -264,17 +307,17 @@ function WorkspaceCard({ me, onBecomeMaster }: { me: UserResponse; onBecomeMaste
               onPress={() => choose(mode)}
               accessibilityRole="radio"
               accessibilityState={{ checked: active }}
-              accessibilityLabel={`${MODE_LABEL[mode]} mode`}
+              accessibilityLabel={t('mode.modeLabel', { mode: modeLabel(mode) })}
               style={[styles.segment, active && styles.segmentActive]}
             >
               {Icon && <Icon />}
-              <Text style={[styles.segmentLabel, active && styles.segmentLabelActive]}>{MODE_LABEL[mode]}</Text>
+              <Text style={[styles.segmentLabel, active && styles.segmentLabelActive]}>{modeLabel(mode)}</Text>
             </Pressable>
           );
         })}
       </View>
 
-      <Text style={styles.workspaceHint}>Switch between booking services and managing your work</Text>
+      <Text style={styles.workspaceHint}>{t('settings.workspaceHint')}</Text>
 
       <SwitchModeSheet
         me={me}
@@ -332,6 +375,7 @@ function Row({
 
 function EditProfileSheet({ me, visible, onClose }: { me: UserResponse; visible: boolean; onClose: () => void }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const updateMe = useUpdateMe();
@@ -343,7 +387,7 @@ function EditProfileSheet({ me, visible, onClose }: { me: UserResponse; visible:
       { firstName: firstName.trim(), lastName: lastName.trim() },
       {
         onSuccess: onClose,
-        onError: () => Alert.alert('Could not save', 'Please try again.'),
+        onError: () => Alert.alert(t('settings.saveError'), t('common.pleaseTryAgain')),
       },
     );
 
@@ -360,26 +404,26 @@ function EditProfileSheet({ me, visible, onClose }: { me: UserResponse; visible:
       statusBarTranslucent
     >
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
           <View style={styles.sheetHandle} />
-          <Text style={styles.sheetTitle}>Edit profile</Text>
-          <Text style={styles.fieldLabel}>First name</Text>
+          <Text style={styles.sheetTitle}>{t('settings.editProfile')}</Text>
+          <Text style={styles.fieldLabel}>{t('settings.firstName')}</Text>
           <TextInput
             value={firstName}
             onChangeText={setFirstName}
             maxLength={128}
-            placeholder="First name"
+            placeholder={t('settings.firstName')}
             placeholderTextColor={colors.textMuted}
             selectionColor={colors.primary}
             style={styles.input}
           />
-          <Text style={styles.fieldLabel}>Last name</Text>
+          <Text style={styles.fieldLabel}>{t('settings.lastName')}</Text>
           <TextInput
             value={lastName}
             onChangeText={setLastName}
             maxLength={128}
-            placeholder="Last name"
+            placeholder={t('settings.lastName')}
             placeholderTextColor={colors.textMuted}
             selectionColor={colors.primary}
             style={styles.input}
@@ -393,7 +437,7 @@ function EditProfileSheet({ me, visible, onClose }: { me: UserResponse; visible:
             {updateMe.isPending ? (
               <ActivityIndicator color={colors.background} />
             ) : (
-              <Text style={styles.saveLabel}>Save</Text>
+              <Text style={styles.saveLabel}>{t('common.save')}</Text>
             )}
           </Pressable>
         </View>

@@ -20,6 +20,7 @@ import { useTranslate } from '../../../i18n/language';
 import { formatPrice } from '../../../shared/format';
 import { openTelegramProfile } from '../../../shared/openTelegram';
 import { AmbientGlow } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 import { formatDuration } from '../../master-profile/profileFormat';
 import { Stars } from '../../master-profile/components/ReviewCard';
@@ -36,7 +37,13 @@ export interface BookingCardActions {
 
 const openTelegram = openTelegramProfile;
 
-export function StatusPill({ status, perspective }: { status: BookingDetailResponse['status']; perspective?: 'client' | 'master' }) {
+export function StatusPill({
+  status,
+  perspective,
+}: {
+  status: BookingDetailResponse['status'];
+  perspective?: 'client' | 'master';
+}) {
   const styles = useStyles();
   const { label, tone } = statusInfo(status, perspective);
   return (
@@ -51,19 +58,22 @@ function Avatar({ uri, size }: { uri?: string; size: number }) {
   const styles = useStyles();
   return (
     <View
-      style={[
-        styles.avatar,
-        { width: size, height: size },
-        size > 50 ? styles.avatarRingStrong : styles.avatarRing,
-      ]}
+      style={[styles.avatar, { width: size, height: size }, size > 50 ? styles.avatarRingStrong : styles.avatarRing]}
     >
       {uri && <Image source={{ uri }} style={styles.avatarImage} />}
     </View>
   );
 }
 
-export function HeroBookingCard({ booking, onOpenMaster, onDirections, onCancel, cancelling }: { booking: BookingDetailResponse } & BookingCardActions) {
+export function HeroBookingCard({
+  booking,
+  onOpenMaster,
+  onDirections,
+  onCancel,
+  cancelling,
+}: { booking: BookingDetailResponse } & BookingCardActions) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const tr = useTranslate();
   const { day, time } = heroDateParts(booking);
 
@@ -75,7 +85,7 @@ export function HeroBookingCard({ booking, onOpenMaster, onDirections, onCancel,
         <Pressable
           onPress={() => onOpenMaster(booking)}
           accessibilityRole="button"
-          accessibilityLabel={`Open ${booking.masterName}'s profile`}
+          accessibilityLabel={t('bookings.openProfile', { name: booking.masterName })}
           style={styles.masterRow}
         >
           <Avatar uri={resolveApiUrl(booking.masterAvatarUrl)} size={56} />
@@ -99,7 +109,7 @@ export function HeroBookingCard({ booking, onOpenMaster, onDirections, onCancel,
           <Pressable
             onPress={() => openTelegram(booking.masterUsername)}
             accessibilityRole="button"
-            accessibilityLabel={`Message ${booking.masterName} in Telegram`}
+            accessibilityLabel={t('profile.messageInTelegram', { name: booking.masterName })}
             style={styles.messageButton}
           >
             <MessageIcon />
@@ -125,7 +135,7 @@ export function HeroBookingCard({ booking, onOpenMaster, onDirections, onCancel,
           </View>
         )}
         <View style={styles.totalBox}>
-          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalLabel}>{t('booking.total')}</Text>
           <Text style={styles.totalValue}>{formatPrice(booking.price)}</Text>
         </View>
       </View>
@@ -139,7 +149,7 @@ export function HeroBookingCard({ booking, onOpenMaster, onDirections, onCancel,
               style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
             >
               <DirectionsIcon />
-              <Text style={styles.primaryLabel}>Get Directions</Text>
+              <Text style={styles.primaryLabel}>{t('bookings.directions')}</Text>
             </Pressable>
           )}
           {onCancel && (
@@ -150,7 +160,9 @@ export function HeroBookingCard({ booking, onOpenMaster, onDirections, onCancel,
               hitSlop={6}
               style={styles.cancelLink}
             >
-              <Text style={styles.cancelLinkText}>{cancelling ? 'Cancelling…' : 'Cancel Reservation'}</Text>
+              <Text style={styles.cancelLinkText}>
+                {cancelling ? t('bookings.cancelling') : t('bookings.cancelReservation')}
+              </Text>
             </Pressable>
           )}
         </View>
@@ -159,8 +171,16 @@ export function HeroBookingCard({ booking, onOpenMaster, onDirections, onCancel,
   );
 }
 
-export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCancel, cancelling, onRate }: { booking: BookingDetailResponse } & BookingCardActions) {
+export function CompactBookingCard({
+  booking,
+  onOpenMaster,
+  onDirections,
+  onCancel,
+  cancelling,
+  onRate,
+}: { booking: BookingDetailResponse } & BookingCardActions) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const tr = useTranslate();
   const showActions = (onDirections && booking.servicePointAddress) || onCancel || onRate;
 
@@ -170,7 +190,7 @@ export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCanc
         <Pressable
           onPress={() => onOpenMaster(booking)}
           accessibilityRole="button"
-          accessibilityLabel={`Open ${booking.masterName}'s profile`}
+          accessibilityLabel={t('bookings.openProfile', { name: booking.masterName })}
           style={styles.masterRow}
         >
           <Avatar uri={resolveApiUrl(booking.masterAvatarUrl)} size={48} />
@@ -191,7 +211,7 @@ export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCanc
           <Pressable
             onPress={() => openTelegram(booking.masterUsername)}
             accessibilityRole="button"
-            accessibilityLabel={`Message ${booking.masterName} in Telegram`}
+            accessibilityLabel={t('profile.messageInTelegram', { name: booking.masterName })}
             style={styles.messageButtonSmall}
           >
             <MessageSmallIcon />
@@ -217,7 +237,7 @@ export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCanc
         )}
         {booking.clientReviewRating !== null && (
           <View style={styles.addressRow}>
-            <Text style={styles.addressText}>Your rating</Text>
+            <Text style={styles.addressText}>{t('bookings.yourRating')}</Text>
             <Stars rating={booking.clientReviewRating} />
           </View>
         )}
@@ -232,7 +252,7 @@ export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCanc
               style={({ pressed }) => [styles.smallButton, pressed && styles.pressed]}
             >
               <DirectionsSmallIcon />
-              <Text style={styles.smallButtonText}>Directions</Text>
+              <Text style={styles.smallButtonText}>{t('bookings.directionsShort')}</Text>
             </Pressable>
           )}
           {onRate && (
@@ -243,7 +263,7 @@ export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCanc
             >
               <Star size={14} color="#FBBF24" fill={booking.clientReviewRating !== null ? '#FBBF24' : 'transparent'} />
               <Text style={styles.smallButtonText}>
-                {booking.clientReviewRating !== null ? 'Edit rating' : 'Rate master'}
+                {booking.clientReviewRating !== null ? t('bookings.editRating') : t('bookings.rateMaster')}
               </Text>
             </Pressable>
           )}
@@ -254,7 +274,7 @@ export function CompactBookingCard({ booking, onOpenMaster, onDirections, onCanc
               accessibilityRole="button"
               style={({ pressed }) => [styles.ghostButton, pressed && styles.pressed]}
             >
-              <Text style={styles.ghostButtonText}>{cancelling ? 'Cancelling…' : 'Cancel'}</Text>
+              <Text style={styles.ghostButtonText}>{cancelling ? t('bookings.cancelling') : t('common.cancel')}</Text>
             </Pressable>
           )}
         </View>

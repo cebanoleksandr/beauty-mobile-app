@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from '../../i18n';
 import { makeStyles } from '../../theme';
 
 interface BottomSheetProps {
@@ -23,6 +24,7 @@ interface BottomSheetProps {
 export function BottomSheet({ visible, onClose, title, subtitle, footer, onShow, children }: BottomSheetProps) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const onShowRef = useRef(onShow);
   onShowRef.current = onShow;
   // Not Modal's onShow: that fires after the open animation (a frame of stale
@@ -34,7 +36,7 @@ export function BottomSheet({ visible, onClose, title, subtitle, footer, onShow,
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
           <View style={styles.handle} />
           {(title || subtitle) && (

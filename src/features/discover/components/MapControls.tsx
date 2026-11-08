@@ -5,6 +5,7 @@ import LayersIcon from '../../../assets/icons/layers.svg';
 import MyLocationIcon from '../../../assets/icons/my-location.svg';
 import ZoomInIcon from '../../../assets/icons/zoom-in.svg';
 import ZoomOutIcon from '../../../assets/icons/zoom-out.svg';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 
 interface MapControlsProps {
@@ -17,20 +18,21 @@ interface MapControlsProps {
 
 export function MapControls({ onLocate, onZoomIn, onZoomOut, onToggleLayers, style }: MapControlsProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   return (
     <View style={[styles.column, style]}>
-      <ControlButton label="My location" onPress={onLocate} style={styles.single}>
+      <ControlButton label={t('discover.map.myLocation')} onPress={onLocate} style={styles.single}>
         <MyLocationIcon />
       </ControlButton>
       <View style={styles.group}>
-        <ControlButton label="Zoom in" onPress={onZoomIn} style={[styles.zoom, styles.zoomTop]}>
+        <ControlButton label={t('discover.map.zoomIn')} onPress={onZoomIn} style={[styles.zoom, styles.zoomTop]}>
           <ZoomInIcon />
         </ControlButton>
-        <ControlButton label="Zoom out" onPress={onZoomOut} style={styles.zoom}>
+        <ControlButton label={t('discover.map.zoomOut')} onPress={onZoomOut} style={styles.zoom}>
           <ZoomOutIcon />
         </ControlButton>
       </View>
-      <ControlButton label="Map style" onPress={onToggleLayers} style={styles.single}>
+      <ControlButton label={t('discover.map.style')} onPress={onToggleLayers} style={styles.single}>
         <LayersIcon />
       </ControlButton>
     </View>

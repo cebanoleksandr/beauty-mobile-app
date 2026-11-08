@@ -7,6 +7,7 @@ import { Pressable, Text, TextInput, View, type StyleProp, type ViewStyle } from
 import ClearIcon from '../../../assets/icons/clear.svg';
 import FiltersIcon from '../../../assets/icons/filters.svg';
 import SearchIcon from '../../../assets/icons/search.svg';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 
 interface SearchBarProps {
@@ -19,6 +20,7 @@ interface SearchBarProps {
 
 export function SearchBar({ value, onChangeText, onOpenFilters, activeFilters, style }: SearchBarProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   return (
@@ -28,7 +30,7 @@ export function SearchBar({ value, onChangeText, onOpenFilters, activeFilters, s
         <TextInput
           value={value}
           onChangeText={onChangeText}
-          placeholder="Search masters or services"
+          placeholder={t('discover.search.placeholder')}
           placeholderTextColor={colors.textSecondary}
           selectionColor={colors.primary}
           returnKeyType="search"
@@ -40,7 +42,7 @@ export function SearchBar({ value, onChangeText, onOpenFilters, activeFilters, s
             onPress={() => onChangeText('')}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Clear search"
+            accessibilityLabel={t('discover.search.clear')}
             style={styles.clear}
           >
             <ClearIcon />
@@ -51,7 +53,9 @@ export function SearchBar({ value, onChangeText, onOpenFilters, activeFilters, s
       <Pressable
         onPress={onOpenFilters}
         accessibilityRole="button"
-        accessibilityLabel={activeFilters ? `Filters, ${activeFilters} active` : 'Filters'}
+        accessibilityLabel={
+          activeFilters ? t('discover.search.filtersActive', { count: activeFilters }) : t('discover.search.filters')
+        }
         style={({ pressed }) => [styles.filters, pressed && styles.pressed]}
       >
         <FiltersIcon />

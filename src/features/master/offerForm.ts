@@ -1,4 +1,5 @@
 /** Shared offer-form rules (same as the web app's become-master/types). */
+import { i18n } from '../../i18n';
 import type { CreateOfferRequest, ServicePointResponse, UpdateOfferRequest } from '../../api';
 
 /** Selectable durations (minutes) — bookings occupy contiguous 30-min slots. */
@@ -6,9 +7,11 @@ export const DURATION_OPTIONS: readonly number[] = [30, 60, 90, 120, 150, 180, 2
 
 /** `30 min`, `1 h`, `1.5 h`. */
 export function formatDurationOption(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return i18n.t('units.minutes', { value: minutes });
   const hours = minutes / 60;
-  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)} h`;
+  return i18n.t('master.durationHours', {
+    value: Number.isInteger(hours) ? hours : hours.toLocaleString(i18n.language, { maximumFractionDigits: 1 }),
+  });
 }
 
 export interface LocationValue {

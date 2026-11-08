@@ -3,6 +3,7 @@ import { MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { formatPrice } from '../../../shared/format';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 import { formatDurationOption } from '../offerForm';
 
@@ -29,13 +30,14 @@ export function OfferRow({
 }: OfferRowProps) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={[styles.row, busy && styles.busy]}>
       <Pressable
         onPress={onEdit}
         disabled={!onEdit || busy}
         accessibilityRole={onEdit ? 'button' : undefined}
-        accessibilityLabel={onEdit ? `Edit ${name}` : undefined}
+        accessibilityLabel={onEdit ? t('master.offer.edit', { name }) : undefined}
         style={({ pressed }) => [styles.main, pressed && styles.pressed]}
       >
         <View style={styles.titleRow}>
@@ -65,7 +67,7 @@ export function OfferRow({
             onPress={onEdit}
             disabled={busy}
             accessibilityRole="button"
-            accessibilityLabel={`Edit ${name}`}
+            accessibilityLabel={t('master.offer.edit', { name })}
             style={styles.iconButton}
           >
             <Pencil size={16} color={colors.textAccent} />
@@ -75,7 +77,7 @@ export function OfferRow({
           onPress={onDelete}
           disabled={busy}
           accessibilityRole="button"
-          accessibilityLabel={`Delete ${name}`}
+          accessibilityLabel={t('master.offer.delete', { name })}
           style={styles.iconButton}
         >
           <Trash2 size={16} color="#FB7185" />

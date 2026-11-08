@@ -24,14 +24,11 @@ import { useTranslate } from '../../i18n/language';
 import { useCreateBooking, useMasterAvailability, useMasterDetail } from '../../query';
 import { useMasterAvailabilityLive } from '../../realtime';
 import { formatPrice } from '../../shared/format';
+import { i18n, useTranslation } from '../../i18n';
 import { makeStyles } from '../../theme';
 import { ServiceRow } from '../master-profile/components/ServiceRow';
 import { formatDuration } from '../master-profile/profileFormat';
-import {
-  buildWeeks,
-  formatAppointment,
-  validStarts as computeValidStarts,
-} from './bookingSlots';
+import { buildWeeks, formatAppointment, validStarts as computeValidStarts } from './bookingSlots';
 import { BookingSummaryCard } from './components/BookingSummaryCard';
 import { DatePicker } from './components/DatePicker';
 import { StepIndicator } from './components/StepIndicator';
@@ -47,16 +44,17 @@ interface BookingScreenProps {
 
 function bookingErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.status === 409 || error.status === 422) return 'This time was just taken. Please pick another one.';
-    if (error.status === 400) return error.message || 'This booking is not allowed.';
-    if (error.isNotFound) return 'This service is no longer available.';
+    if (error.status === 409 || error.status === 422) return i18n.t('booking.errors.taken');
+    if (error.status === 400) return error.message || i18n.t('booking.errors.notAllowed');
+    if (error.isNotFound) return i18n.t('booking.errors.unavailable');
   }
-  if (error instanceof NetworkError) return 'Could not reach the server. Check your connection.';
-  return 'Something went wrong. Please try again.';
+  if (error instanceof NetworkError) return i18n.t('auth.errors.network');
+  return i18n.t('auth.errors.generic');
 }
 
 export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookings }: BookingScreenProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const tr = useTranslate();
   const detail = useMasterDetail(masterId);
@@ -69,8 +67,7 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
   const days = useMemo(() => availability.data ?? [], [availability.data]);
 
   const [serviceId, setServiceId] = useState<string | undefined>(initialServiceId);
-  const service: MasterServiceDto | undefined =
-    master?.services.find(s => s.id === serviceId) ?? master?.services[0];
+  const service: MasterServiceDto | undefined = master?.services.find(s => s.id === serviceId) ?? master?.services[0];
 
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
@@ -98,7 +95,13 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
     if (!date || !bookableDays.has(date)) {
       const first = [...bookableDays][0] ?? null;
       setDate(first);
-      if (first) setWeekIndex(Math.max(0, weeks.findIndex(w => w.includes(first))));
+      if (first)
+        setWeekIndex(
+          Math.max(
+            0,
+            weeks.findIndex(w => w.includes(first)),
+          ),
+        );
     }
     if (time && date && !startsByDay.get(date)?.has(time)) setTime(null);
   }, [bookableDays, startsByDay, date, time, weeks]);
@@ -113,7 +116,7 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
       {
         onSuccess: setBooked,
         onError: error => {
-          Alert.alert('Booking failed', bookingErrorMessage(error));
+          Alert.alert(t('booking.failedTitle'), bookingErrorMessage(error));
           if (error instanceof ApiError && (error.status === 409 || error.status === 422)) {
             setTime(null);
             availability.refetch();
@@ -126,11 +129,16 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
   const header = (
     <View style={[styles.header, { paddingTop: insets.top }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Back" style={styles.roundButton}>
+        <Pressable
+          onPress={onBack}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+          style={styles.roundButton}
+        >
           <BackIcon />
         </Pressable>
         <Text style={styles.headerTitle} accessibilityRole="header">
-          {booked ? 'Request sent' : 'Book Appointment'}
+          {booked ? t('booking.requestSent') : t('booking.title')}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -146,26 +154,27 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
           <View style={styles.successIcon}>
             <TimeCheck />
           </View>
-          <Text style={styles.successTitle}>Booking request sent</Text>
-          <Text style={styles.successText}>
-            {booked.masterName} will get a notification and confirm your appointment. You can follow its status in
-            Bookings.
-          </Text>
+          <Text style={styles.successTitle}>{t('booking.successTitle')}</Text>
+          <Text style={styles.successText}>{t('booking.successText', { name: booked.masterName })}</Text>
           <View style={styles.receipt}>
-            <ReceiptRow label="Service" value={tr(booked.serviceName)} />
+            <ReceiptRow label={t('booking.service')} value={tr(booked.serviceName)} />
             <ReceiptRow
-              label="When"
-              value={formatAppointment(booked.scheduledTime.slice(0, 10), booked.scheduledTime.slice(11, 16), booked.durationMinutes)}
+              label={t('booking.when')}
+              value={formatAppointment(
+                booked.scheduledTime.slice(0, 10),
+                booked.scheduledTime.slice(11, 16),
+                booked.durationMinutes,
+              )}
             />
-            <ReceiptRow label="Total" value={formatPrice(booked.price)} accent />
+            <ReceiptRow label={t('booking.total')} value={formatPrice(booked.price)} accent />
           </View>
         </ScrollView>
         <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 14) }]}>
           <Pressable onPress={onBack} accessibilityRole="button" style={[styles.secondaryButton]}>
-            <Text style={styles.secondaryLabel}>Back to profile</Text>
+            <Text style={styles.secondaryLabel}>{t('booking.backToProfile')}</Text>
           </Pressable>
           <Pressable onPress={onOpenBookings} accessibilityRole="button" style={styles.confirm}>
-            <Text style={styles.confirmLabel}>My bookings</Text>
+            <Text style={styles.confirmLabel}>{t('booking.myBookings')}</Text>
             <ArrowRight />
           </Pressable>
         </View>
@@ -181,10 +190,10 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
         <View style={styles.center}>
           {detail.isError ? (
             <Pressable onPress={() => detail.refetch()} accessibilityRole="button">
-              <Text style={styles.link}>Couldn't load. Try again</Text>
+              <Text style={styles.link}>{t('common.loadError')}</Text>
             </Pressable>
           ) : master && !service ? (
-            <Text style={styles.muted}>This master has not published any services yet.</Text>
+            <Text style={styles.muted}>{t('booking.noServices')}</Text>
           ) : (
             <ActivityIndicator color={styles.link.color} />
           )}
@@ -202,14 +211,16 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
               <ActivityIndicator color={styles.link.color} />
             ) : availability.isError ? (
               <Pressable onPress={() => availability.refetch()} accessibilityRole="button">
-                <Text style={styles.link}>Couldn't load free times. Try again</Text>
+                <Text style={styles.link}>{t('booking.slotsLoadError')}</Text>
               </Pressable>
             ) : bookableDays.size === 0 ? (
               <View style={styles.notice}>
-                <Text style={styles.noticeTitle}>No free time in the next two weeks</Text>
+                <Text style={styles.noticeTitle}>{t('booking.noFreeTitle')}</Text>
                 <Text style={styles.noticeText}>
-                  {master.displayName} has no open slots that fit {formatDuration(service.durationMinutes)}. Try another
-                  service or check back later.
+                  {t('booking.noFreeText', {
+                    name: master.displayName,
+                    duration: formatDuration(service.durationMinutes),
+                  })}
                 </Text>
               </View>
             ) : (
@@ -235,27 +246,29 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
             )}
 
             <View style={styles.breakdown}>
-              <Text style={styles.breakdownTitle}>Summary</Text>
+              <Text style={styles.breakdownTitle}>{t('booking.summary')}</Text>
               <ReceiptRow label={tr(service.name)} value={formatPrice(service.price)} />
               {date && time && (
-                <ReceiptRow label="When" value={formatAppointment(date, time, service.durationMinutes)} muted />
+                <ReceiptRow
+                  label={t('booking.when')}
+                  value={formatAppointment(date, time, service.durationMinutes)}
+                  muted
+                />
               )}
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalLabel}>{t('booking.total')}</Text>
                 <Text style={styles.totalValue}>{formatPrice(service.price)}</Text>
               </View>
               <View style={styles.info}>
                 <InfoIcon />
-                <Text style={styles.infoText}>
-                  The master confirms each request. You'll see the status in Bookings.
-                </Text>
+                <Text style={styles.infoText}>{t('booking.info')}</Text>
               </View>
             </View>
           </ScrollView>
 
           <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 14) }]}>
             <View style={styles.dockInfo}>
-              <Text style={styles.dockLabel}>Total</Text>
+              <Text style={styles.dockLabel}>{t('booking.total')}</Text>
               <Text style={styles.dockPrice}>{formatPrice(service.price)}</Text>
             </View>
             <Pressable
@@ -269,7 +282,7 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
                 <ActivityIndicator color={styles.confirmLabel.color} />
               ) : (
                 <>
-                  <Text style={styles.confirmLabel}>{time ? 'Confirm booking' : 'Pick a time'}</Text>
+                  <Text style={styles.confirmLabel}>{time ? t('booking.confirm') : t('booking.pickTime')}</Text>
                   {time && <ArrowRight />}
                 </>
               )}
@@ -283,10 +296,14 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
             onRequestClose={() => setPickerOpen(false)}
             statusBarTranslucent
           >
-            <Pressable style={styles.backdrop} onPress={() => setPickerOpen(false)} accessibilityLabel="Close" />
+            <Pressable
+              style={styles.backdrop}
+              onPress={() => setPickerOpen(false)}
+              accessibilityLabel={t('common.close')}
+            />
             <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
               <View style={styles.handle} />
-              <Text style={styles.sheetTitle}>Choose a service</Text>
+              <Text style={styles.sheetTitle}>{t('booking.chooseService')}</Text>
               <ScrollView contentContainerStyle={styles.sheetList}>
                 {master.services.map(s => (
                   <ServiceRow
@@ -309,7 +326,17 @@ export function BookingScreen({ masterId, initialServiceId, onBack, onOpenBookin
   );
 }
 
-function ReceiptRow({ label, value, muted, accent }: { label: string; value: string; muted?: boolean; accent?: boolean }) {
+function ReceiptRow({
+  label,
+  value,
+  muted,
+  accent,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+  accent?: boolean;
+}) {
   const styles = useStyles();
   return (
     <View style={styles.row}>

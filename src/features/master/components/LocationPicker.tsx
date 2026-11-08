@@ -7,6 +7,7 @@ import { Crosshair, MapPin, Search, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { TextField } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 import { useUserLocation } from '../../discover/useUserLocation';
 import type { LocationValue, ServicePointOption } from '../offerForm';
@@ -35,6 +36,7 @@ export function LocationPicker({ value, onChange, existingPoints = [] }: Locatio
   const styles = useStyles();
   const { colors } = useTheme();
   const { locate } = useUserLocation();
+  const { t } = useTranslation();
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -96,7 +98,7 @@ export function LocationPicker({ value, onChange, existingPoints = [] }: Locatio
   return (
     <View style={styles.root}>
       {existingPoints.length > 0 && (
-        <View style={styles.points} accessibilityRole="radiogroup" accessibilityLabel="Saved locations">
+        <View style={styles.points} accessibilityRole="radiogroup" accessibilityLabel={t('master.location.saved')}>
           {existingPoints.map(p => {
             const selected = value.existingPointId === p.id;
             return (
@@ -135,9 +137,9 @@ export function LocationPicker({ value, onChange, existingPoints = [] }: Locatio
             onChange({ address: text });
             search(text);
           }}
-          placeholder={existingPoints.length ? 'Or enter a new address' : 'Street, building, city'}
+          placeholder={existingPoints.length ? t('master.location.newAddress') : t('master.location.placeholder')}
           style={styles.input}
-          accessibilityLabel="Address"
+          accessibilityLabel={t('master.location.address')}
         />
         <View style={styles.inputIcon} pointerEvents="none">
           <Search size={16} color={colors.textSecondary} />
@@ -154,7 +156,7 @@ export function LocationPicker({ value, onChange, existingPoints = [] }: Locatio
                   setSuggestions([]);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Clear address"
+                accessibilityLabel={t('master.location.clear')}
                 hitSlop={8}
               >
                 <X size={16} color={colors.textSecondary} />
@@ -200,7 +202,7 @@ export function LocationPicker({ value, onChange, existingPoints = [] }: Locatio
         ) : (
           <Crosshair size={16} color={colors.primary} />
         )}
-        <Text style={styles.locateText}>Use my current location</Text>
+        <Text style={styles.locateText}>{t('master.location.useMine')}</Text>
       </Pressable>
     </View>
   );

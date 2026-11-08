@@ -8,14 +8,16 @@ import { Text, View } from 'react-native';
 import ReviewStar from '../../../assets/icons/master/review-star.svg';
 import VerifiedCheck from '../../../assets/icons/master/verified-check.svg';
 import type { MasterReviewDto } from '../../../api';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 import { formatRelativeDate, initials } from '../profileFormat';
 
 export function Stars({ rating }: { rating: number }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const full = Math.max(0, Math.min(5, Math.round(rating)));
   return (
-    <View style={styles.stars} accessibilityLabel={`${rating} out of 5 stars`}>
+    <View style={styles.stars} accessibilityLabel={t('profile.starsLabel', { rating })}>
       {Array.from({ length: 5 }, (_, i) => (
         <View key={i} style={i < full ? undefined : styles.starOff}>
           <ReviewStar />
@@ -27,6 +29,7 @@ export function Stars({ rating }: { rating: number }) {
 
 export function ReviewCard({ review }: { review: MasterReviewDto }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -46,7 +49,7 @@ export function ReviewCard({ review }: { review: MasterReviewDto }) {
       {!!review.text && <Text style={styles.text}>{review.text}</Text>}
       <View style={styles.footer}>
         <VerifiedCheck />
-        <Text style={styles.footerText}>Verified appointment</Text>
+        <Text style={styles.footerText}>{t('profile.verifiedAppointment')}</Text>
       </View>
     </View>
   );

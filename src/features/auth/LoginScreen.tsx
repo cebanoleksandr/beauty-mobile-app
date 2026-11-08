@@ -11,31 +11,33 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import heroImage from '../../assets/images/login-hero.jpg';
 import TelegramIcon from '../../assets/icons/telegram.svg';
 import { TelegramNotInstalledError, useBotLogin } from '../../auth';
+import { i18n, useTranslation } from '../../i18n';
 import { ApiError, NetworkError } from '../../api';
 import { links } from '../../config/links';
 import { DotBadge } from '../../shared/ui';
 import { makeStyles, useTheme } from '../../theme';
 
 function signInErrorMessage(error: unknown): string {
-  if (error instanceof TelegramNotInstalledError) return error.message;
-  if (error instanceof ApiError && error.status === 503) return 'Telegram sign-in is temporarily unavailable.';
-  if (error instanceof ApiError && error.isUnauthorized) return 'Sign-in expired. Please try again.';
-  if (error instanceof ApiError && error.isForbidden) return 'This account has been blocked.';
-  if (error instanceof NetworkError) return 'Could not reach the server. Check your connection.';
-  return 'Something went wrong. Please try again.';
+  if (error instanceof TelegramNotInstalledError) return i18n.t('auth.errors.noTelegram');
+  if (error instanceof ApiError && error.status === 503) return i18n.t('auth.errors.unavailable');
+  if (error instanceof ApiError && error.isUnauthorized) return i18n.t('auth.errors.expired');
+  if (error instanceof ApiError && error.isForbidden) return i18n.t('auth.errors.blocked');
+  if (error instanceof NetworkError) return i18n.t('auth.errors.network');
+  return i18n.t('auth.errors.generic');
 }
 
 export function LoginScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { state, start, cancel, openBot, checkNow } = useBotLogin();
   const busy = state.phase === 'starting';
   const failure = state.phase === 'error' ? state.error : null;
 
   useEffect(() => {
-    if (failure) Alert.alert('Sign-in failed', signInErrorMessage(failure));
-  }, [failure]);
+    if (failure) Alert.alert(t('auth.failedTitle'), signInErrorMessage(failure));
+  }, [failure, t]);
 
   const openLink = (url: string | null) => url && Linking.openURL(url);
 
@@ -47,7 +49,7 @@ export function LoginScreen() {
         <View style={styles.heroFade} />
         <View style={styles.heroTopVignette} />
         <DotBadge
-          label="Haute Beauté Directory"
+          label={t('auth.badge')}
           gap={8}
           backgroundColor="rgba(14, 14, 17, 0.4)"
           borderColor="rgba(255, 255, 255, 0.05)"
@@ -62,10 +64,8 @@ export function LoginScreen() {
           <Text style={styles.wordmark} accessibilityRole="header">
             MASTERS
           </Text>
-          <Text style={styles.tagline}>Find your beauty master. Anywhere.</Text>
-          <Text style={styles.description}>
-            Curated hair stylists, colorists, nail artists & bespoke aesthetic rituals.
-          </Text>
+          <Text style={styles.tagline}>{t('auth.tagline')}</Text>
+          <Text style={styles.description}>{t('auth.description')}</Text>
         </View>
 
         <View style={styles.cta}>
@@ -73,30 +73,30 @@ export function LoginScreen() {
             <View style={styles.waiting} accessibilityLiveRegion="polite">
               <View style={styles.waitingHeader}>
                 <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.waitingTitle}>Waiting for confirmation in Telegram</Text>
+                <Text style={styles.waitingTitle}>{t('auth.waitingTitle')}</Text>
               </View>
-              <Text style={styles.waitingStep}>1. Tap “Start” in the bot chat</Text>
-              <Text style={styles.waitingStep}>2. Tap “Confirm sign-in”, then come back here</Text>
+              <Text style={styles.waitingStep}>{t('auth.waitingStep1')}</Text>
+              <Text style={styles.waitingStep}>{t('auth.waitingStep2')}</Text>
               <View style={styles.waitingActions}>
                 <Text
                   style={styles.waitingLink}
-                  onPress={() => openBot(state.botUrl).catch(e => Alert.alert('Sign-in failed', signInErrorMessage(e)))}
+                  onPress={() =>
+                    openBot(state.botUrl).catch(e => Alert.alert(t('auth.failedTitle'), signInErrorMessage(e)))
+                  }
                   accessibilityRole="button"
                 >
-                  Open Telegram again
+                  {t('auth.openTelegramAgain')}
                 </Text>
                 <Text style={styles.waitingLink} onPress={checkNow} accessibilityRole="button">
-                  I've confirmed
+                  {t('auth.confirmed')}
                 </Text>
                 <Text style={styles.waitingCancel} onPress={cancel} accessibilityRole="button">
-                  Cancel
+                  {t('common.cancel')}
                 </Text>
               </View>
             </View>
           )}
-          {state.phase === 'expired' && (
-            <Text style={styles.expired}>The sign-in request expired. Tap the button to try again.</Text>
-          )}
+          {state.phase === 'expired' && <Text style={styles.expired}>{t('auth.expired')}</Text>}
           <Pressable
             onPress={start}
             disabled={busy || state.phase === 'waiting'}
@@ -109,23 +109,19 @@ export function LoginScreen() {
             ]}
           >
             <View style={styles.telegramIcon}>
-              {busy ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <TelegramIcon />
-              )}
+              {busy ? <ActivityIndicator size="small" color="#FFFFFF" /> : <TelegramIcon />}
             </View>
-            <Text style={styles.telegramLabel}>Continue with Telegram</Text>
+            <Text style={styles.telegramLabel}>{t('auth.continue')}</Text>
           </Pressable>
 
           <Text style={styles.legal}>
-            By continuing you agree to the{' '}
+            {t('auth.legalPrefix')}{' '}
             <Text style={styles.legalLink} onPress={() => openLink(links.terms)}>
-              Terms
+              {t('auth.terms')}
             </Text>{' '}
-            and{' '}
+            {t('auth.and')}{' '}
             <Text style={styles.legalLink} onPress={() => openLink(links.privacyPolicy)}>
-              Privacy Policy
+              {t('auth.privacy')}
             </Text>
           </Text>
         </View>
@@ -157,8 +153,7 @@ const useStyles = makeStyles(t => ({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundImage:
-      'linear-gradient(to top, rgb(14, 14, 17) 0%, rgba(14, 14, 17, 0.6) 50%, rgba(14, 14, 17, 0) 100%)',
+    backgroundImage: 'linear-gradient(to top, rgb(14, 14, 17) 0%, rgba(14, 14, 17, 0.6) 50%, rgba(14, 14, 17, 0) 100%)',
   },
   heroTopVignette: {
     position: 'absolute',

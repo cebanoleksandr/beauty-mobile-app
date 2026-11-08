@@ -19,13 +19,11 @@ import HintIcon from '../../assets/icons/switch-mode/hint.svg';
 import MasterIcon from '../../assets/icons/switch-mode/master.svg';
 import { ApiError, type UserContext, type UserResponse } from '../../api';
 import { useSwitchMode } from '../../query';
+import { i18n, useTranslation } from '../../i18n';
 import { makeStyles, useTheme } from '../../theme';
 
-const MODES: Record<UserContext, { label: string; description: string }> = {
-  CLIENT: { label: 'Client', description: 'Find masters and book appointments' },
-  MASTER: { label: 'Master', description: 'Manage bookings, calendar and clients' },
-  ADMIN: { label: 'Admin', description: 'Moderate requests, reports and users' },
-};
+const modeLabel = (mode: UserContext) => i18n.t(`mode.${mode}`);
+const modeDescription = (mode: UserContext) => i18n.t(`switchMode.desc.${mode}`);
 
 interface SwitchModeSheetProps {
   me: UserResponse;
@@ -39,6 +37,7 @@ interface SwitchModeSheetProps {
 
 export function SwitchModeSheet({ me, visible, initialTarget, onClose, onNeedsServices }: SwitchModeSheetProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const switchMode = useSwitchMode();
   const [target, setTarget] = useState<UserContext>(initialTarget);
@@ -58,13 +57,13 @@ export function SwitchModeSheet({ me, visible, initialTarget, onClose, onNeedsSe
       onError: error => {
         const noServices = error instanceof ApiError && error.status === 400;
         Alert.alert(
-          'Could not switch mode',
-          noServices ? 'Add at least one active service to your master profile first.' : 'Please try again.',
+          t('switchMode.errorTitle'),
+          noServices ? t('switchMode.noServices') : t('common.pleaseTryAgain'),
           noServices && onNeedsServices
             ? [
-                { text: 'Not now', style: 'cancel' },
+                { text: t('switchMode.notNow'), style: 'cancel' },
                 {
-                  text: 'Add services',
+                  text: t('switchMode.addServices'),
                   onPress: () => {
                     onClose();
                     onNeedsServices();
@@ -79,18 +78,23 @@ export function SwitchModeSheet({ me, visible, initialTarget, onClose, onNeedsSe
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.handle} />
 
         <View style={styles.header}>
           <View style={styles.headerText}>
             <Text style={styles.title} accessibilityRole="header">
-              Switch Mode
+              {t('switchMode.title')}
             </Text>
-            <Text style={styles.subtitle}>Toggle between booking and master workflows</Text>
+            <Text style={styles.subtitle}>{t('switchMode.subtitle')}</Text>
           </View>
-          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={styles.close}>
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            style={styles.close}
+          >
             <CloseIcon />
           </Pressable>
         </View>
@@ -110,7 +114,7 @@ export function SwitchModeSheet({ me, visible, initialTarget, onClose, onNeedsSe
 
         <View style={styles.hint}>
           <HintIcon />
-          <Text style={styles.hintText}>Your bookings are saved in both modes</Text>
+          <Text style={styles.hintText}>{t('switchMode.hint')}</Text>
         </View>
 
         <Pressable
@@ -124,14 +128,16 @@ export function SwitchModeSheet({ me, visible, initialTarget, onClose, onNeedsSe
           ) : (
             <>
               <Text style={styles.primaryLabel}>
-                {unchanged ? `Stay in ${MODES[target].label} mode` : `Switch to ${MODES[target].label} mode`}
+                {unchanged
+                  ? t('switchMode.stay', { mode: modeLabel(target) })
+                  : t('switchMode.switchTo', { mode: modeLabel(target) })}
               </Text>
               {!unchanged && <ArrowRight />}
             </>
           )}
         </Pressable>
         <Pressable onPress={onClose} accessibilityRole="button" style={styles.secondary}>
-          <Text style={styles.secondaryLabel}>Keep Current Mode</Text>
+          <Text style={styles.secondaryLabel}>{t('switchMode.keep')}</Text>
         </Pressable>
       </View>
     </Modal>
@@ -152,6 +158,7 @@ function ModeOption({
   onSelect: () => void;
 }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const icons: Partial<Record<UserContext, FC<SvgProps>>> = { CLIENT: ClientIcon, MASTER: MasterIcon };
   const Icon = icons[mode];
@@ -162,7 +169,7 @@ function ModeOption({
       disabled={disabled}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, disabled }}
-      accessibilityLabel={`${MODES[mode].label} mode`}
+      accessibilityLabel={t('mode.modeLabel', { mode: modeLabel(mode) })}
       style={[styles.option, selected ? styles.optionSelected : styles.optionIdle, disabled && styles.optionDisabled]}
     >
       <View style={[styles.optionIcon, selected ? styles.optionIconSelected : styles.optionIconIdle]}>
@@ -170,16 +177,14 @@ function ModeOption({
       </View>
       <View style={styles.optionText}>
         <View style={styles.optionTitleRow}>
-          <Text style={styles.optionTitle}>{MODES[mode].label}</Text>
+          <Text style={styles.optionTitle}>{modeLabel(mode)}</Text>
           {current && (
             <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>Active</Text>
+              <Text style={styles.activeBadgeText}>{t('switchMode.active')}</Text>
             </View>
           )}
         </View>
-        <Text style={styles.optionDescription}>
-          {disabled ? 'Set up a master profile with a service first' : MODES[mode].description}
-        </Text>
+        <Text style={styles.optionDescription}>{disabled ? t('switchMode.needsProfile') : modeDescription(mode)}</Text>
       </View>
       <View style={[styles.radio, selected ? styles.radioOn : styles.radioOff]}>{selected && <CheckIcon />}</View>
     </Pressable>

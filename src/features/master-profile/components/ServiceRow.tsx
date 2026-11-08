@@ -8,6 +8,7 @@ import ClockIcon from '../../../assets/icons/master/clock.svg';
 import type { MasterServiceDto } from '../../../api';
 import { useTranslate } from '../../../i18n/language';
 import { formatPrice } from '../../../shared/format';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 import { formatDuration } from '../profileFormat';
 
@@ -19,6 +20,7 @@ interface ServiceRowProps {
 
 export function ServiceRow({ service, selected, onSelect }: ServiceRowProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const tr = useTranslate();
   const name = tr(service.name);
 
@@ -38,11 +40,11 @@ export function ServiceRow({ service, selected, onSelect }: ServiceRowProps) {
         onPress={() => onSelect(service)}
         accessibilityRole="button"
         accessibilityState={{ selected }}
-        accessibilityLabel={`${selected ? 'Selected' : 'Select'} ${name}`}
+        accessibilityLabel={`${selected ? t('profile.selected') : t('profile.select')} ${name}`}
         style={({ pressed }) => [styles.button, selected && styles.buttonSelected, pressed && styles.pressed]}
       >
         <Text style={[styles.buttonLabel, selected && styles.buttonLabelSelected]}>
-          {selected ? 'Selected' : 'Select'}
+          {selected ? t('profile.selected') : t('profile.select')}
         </Text>
       </Pressable>
     </View>

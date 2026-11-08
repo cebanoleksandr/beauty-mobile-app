@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MasterCardDto } from '../../api';
 import { useMasterSearch } from '../../query';
 import { useDebouncedValue } from '../../shared/useDebouncedValue';
+import { useTranslation } from '../../i18n';
 import { makeStyles } from '../../theme';
 import { favoritesStore, useFavoriteIds } from '../favorites/favoritesStore';
 import { DiscoverHeader, HEADER_HEIGHT } from './components/DiscoverHeader';
@@ -48,6 +49,7 @@ interface MapSearchScreenProps {
 
 export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraRef>(null);
   const sheetRef = useRef<MastersSheetRef>(null);
@@ -119,7 +121,7 @@ export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
   const onLocatePress = async () => {
     const ok = await goToUser();
     if (!ok) {
-      Alert.alert('Location unavailable', 'Allow location access in Settings to see masters near you.');
+      Alert.alert(t('discover.locationTitle'), t('discover.locationText'));
     }
   };
 

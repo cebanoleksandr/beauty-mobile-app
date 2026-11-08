@@ -1,11 +1,10 @@
 /** Date helpers for the master workspace. Booking/slot times are local `YYYY-MM-DDTHH:mm[:ss]`. */
 import type { BookingDetailResponse } from '../../api';
+import { i18n } from '../../i18n';
+import * as dates from '../../i18n/dates';
 import { startOf } from '../bookings/bookingGroups';
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const WEEKDAYS_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** Local calendar date key `YYYY-MM-DD` (not UTC — `toISOString` flips the day after midnight). */
 export function dayKey(d: Date): string {
@@ -23,17 +22,17 @@ export function addDays(d: Date, n: number): Date {
   return r;
 }
 
-export const weekdayShort = (d: Date) => WEEKDAYS[d.getDay()];
-export const monthShort = (d: Date) => MONTHS[d.getMonth()];
+export const weekdayShort = dates.weekdayShort;
+export const monthShort = dates.monthShort;
 
-/** `Today, Nov 8` / `Tomorrow, Nov 9` / `Monday, Nov 10`. */
+/** `Today, Nov 8` / `Tomorrow, Nov 9` / `Monday, Nov 10` (localized). */
 export function dayHeader(key: string, now = new Date()): string {
   const d = parseDayKey(key);
-  const base = `${MONTHS[d.getMonth()]} ${d.getDate()}`;
-  if (key === dayKey(now)) return `Today, ${base}`;
-  if (key === dayKey(addDays(now, 1))) return `Tomorrow, ${base}`;
-  if (key === dayKey(addDays(now, -1))) return `Yesterday, ${base}`;
-  return `${WEEKDAYS_LONG[d.getDay()]}, ${base}`;
+  const base = dates.dayMonthLong(d);
+  if (key === dayKey(now)) return i18n.t('dates.todayPrefix', { date: base });
+  if (key === dayKey(addDays(now, 1))) return i18n.t('dates.tomorrowPrefix', { date: base });
+  if (key === dayKey(addDays(now, -1))) return i18n.t('master.dates.yesterdayPrefix', { date: base });
+  return `${dates.weekdayLong(d)}, ${base}`;
 }
 
 /** `HH:mm` of a local date-time string. */
@@ -59,7 +58,7 @@ export function timeRange(b: Pick<BookingDetailResponse, 'scheduledTime' | 'dura
 /** `08.11.26`. */
 export function shortDate(localDateTime: string): string {
   const d = startOf({ scheduledTime: localDateTime } as BookingDetailResponse);
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)}`;
+  return dates.shortNumericDate(d);
 }
 
 /** Groups by local day; `desc` = newest day first. */

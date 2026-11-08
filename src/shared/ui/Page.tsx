@@ -7,6 +7,7 @@ import type { LucideIcon } from 'lucide-react-native';
 import { Star } from 'lucide-react-native';
 import React, { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useTranslation } from '../../i18n';
 import { makeStyles, useTheme } from '../../theme';
 
 export function PageTitle({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
@@ -134,11 +135,12 @@ export function LoadingState() {
   return <ActivityIndicator color={colors.primary} style={styles.state} />;
 }
 
-export function ErrorState({ text = "Couldn't load. Try again", onRetry }: { text?: string; onRetry: () => void }) {
+export function ErrorState({ text, onRetry }: { text?: string; onRetry: () => void }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   return (
     <Pressable onPress={onRetry} accessibilityRole="button" style={styles.state}>
-      <Text style={styles.link}>{text}</Text>
+      <Text style={styles.link}>{text ?? t('common.loadError')}</Text>
     </Pressable>
   );
 }

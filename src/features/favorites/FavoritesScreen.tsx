@@ -1,17 +1,15 @@
 import React from 'react';
+import { useTranslation } from '../../i18n';
 import { ScreenPlaceholder } from '../../shared/ui';
 import { useFavoriteIds } from './favoritesStore';
 
 export function FavoritesScreen() {
   const ids = useFavoriteIds();
+  const { t } = useTranslation();
   return (
     <ScreenPlaceholder
-      title="Favorites"
-      text={
-        ids.size
-          ? `You have ${ids.size} saved master${ids.size === 1 ? '' : 's'}. Tip: turn on "Favorites only" in the map filters.`
-          : 'Tap the bookmark on a master card to save them here.'
-      }
+      title={t('favorites.title')}
+      text={ids.size ? t('favorites.count', { count: ids.size }) : t('favorites.empty')}
     />
   );
 }

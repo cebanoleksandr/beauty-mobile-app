@@ -20,6 +20,7 @@ import {
   ErrorState,
   LoadingState,
 } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 import { OfferEditorSheet } from '../components/OfferEditorSheet';
 import { OfferRow } from '../components/OfferRow';
@@ -41,6 +42,7 @@ export function BecomeMasterScreen({ onBack, onDone }: BecomeMasterScreenProps) 
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const tr = useTranslate();
+  const { t } = useTranslation();
   const catalog = useCatalog();
   const submit = useSubmitOnboarding();
   const [offers, setOffers] = useState<PendingOffer[]>([]);
@@ -78,7 +80,7 @@ export function BecomeMasterScreen({ onBack, onDone }: BecomeMasterScreenProps) 
         ...value,
         location,
         localId: String(nextId.current),
-        serviceName: def?.name ?? { en: 'Service' },
+        serviceName: def?.name ?? { en: t('master.onboarding.fallbackService') },
       },
     ]);
     setEditorOpen(false);
@@ -104,11 +106,9 @@ export function BecomeMasterScreen({ onBack, onDone }: BecomeMasterScreenProps) 
         <View style={styles.successIcon}>
           <PartyPopper size={36} color={colors.primary} strokeWidth={1.5} />
         </View>
-        <Text style={styles.successTitle}>You're a master now!</Text>
-        <Text style={styles.successText}>
-          Your services are live. Open your calendar and add free time so clients can book you.
-        </Text>
-        <Button label="Go to my workspace" onPress={onDone} style={styles.successButton} />
+        <Text style={styles.successTitle}>{t('master.onboarding.successTitle')}</Text>
+        <Text style={styles.successText}>{t('master.onboarding.successText')}</Text>
+        <Button label={t('master.onboarding.goToWorkspace')} onPress={onDone} style={styles.successButton} />
       </View>
     );
   }
@@ -120,31 +120,31 @@ export function BecomeMasterScreen({ onBack, onDone }: BecomeMasterScreenProps) 
         <CircleIconButton
           icon={<ChevronLeft size={20} color={colors.text} />}
           onPress={onBack}
-          accessibilityLabel="Back"
+          accessibilityLabel={t('common.back')}
         />
-        <DotBadge label="Master setup" />
+        <DotBadge label={t('master.onboarding.badge')} />
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.titleBlock}>
           <Text style={styles.title} accessibilityRole="header">
-            What do you <Text style={styles.titleAccent}>offer</Text>?
+            {t('master.onboarding.titleBefore')}
+            <Text style={styles.titleAccent}>{t('master.onboarding.titleAccent')}</Text>
+            {t('master.onboarding.titleAfter')}
           </Text>
-          <Text style={styles.subtitle}>
-            Add at least one service with a price and duration. You can change everything later.
-          </Text>
+          <Text style={styles.subtitle}>{t('master.onboarding.subtitle')}</Text>
         </View>
 
         {catalog.isPending ? (
           <LoadingState />
         ) : catalog.isError ? (
-          <ErrorState text="Couldn't load the catalog. Try again" onRetry={() => catalog.refetch()} />
+          <ErrorState text={t('master.onboarding.catalogError')} onRetry={() => catalog.refetch()} />
         ) : offers.length === 0 ? (
           <EmptyState
             Icon={Sparkles}
-            title="No services added"
-            text="Tap “Add a service” to pick one from the catalog."
+            title={t('master.onboarding.emptyTitle')}
+            text={t('master.onboarding.emptyText')}
           />
         ) : (
           <View style={styles.list}>
@@ -164,16 +164,18 @@ export function BecomeMasterScreen({ onBack, onDone }: BecomeMasterScreenProps) 
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        {submit.isError && <Text style={styles.error}>Could not finish the setup. Please try again.</Text>}
+        {submit.isError && <Text style={styles.error}>{t('master.onboarding.error')}</Text>}
         <Button
-          label="Add a service"
+          label={t('master.offer.addTitle')}
           variant="secondary"
           icon={<Plus size={18} color={colors.text} />}
           onPress={() => setEditorOpen(true)}
           disabled={!catalog.data}
         />
         <Button
-          label={`Become a master${offers.length ? ` · ${offers.length} service${offers.length > 1 ? 's' : ''}` : ''}`}
+          label={
+            offers.length ? t('master.onboarding.submitCount', { count: offers.length }) : t('master.onboarding.submit')
+          }
           onPress={finish}
           disabled={offers.length === 0}
           loading={submit.isPending}

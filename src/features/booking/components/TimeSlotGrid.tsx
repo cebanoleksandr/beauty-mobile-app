@@ -7,6 +7,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import TimeCheck from '../../../assets/icons/booking/time-check.svg';
 import type { TimeSlotDto } from '../../../api';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 import { groupByPeriod } from '../bookingSlots';
 
@@ -19,17 +20,18 @@ interface TimeSlotGridProps {
 
 export function TimeSlotGrid({ slots, validStarts, selected, onSelect }: TimeSlotGridProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const groups = groupByPeriod(slots);
 
   return (
     <View style={styles.section}>
-      <Text style={styles.title}>Available Time Slots</Text>
+      <Text style={styles.title}>{t('booking.timeSlots')}</Text>
       {groups.length === 0 ? (
-        <Text style={styles.empty}>No open slots on this day.</Text>
+        <Text style={styles.empty}>{t('booking.noSlotsDay')}</Text>
       ) : (
         groups.map(group => (
           <View key={group.period} style={styles.group}>
-            <Text style={styles.period}>{group.period}</Text>
+            <Text style={styles.period}>{t(`booking.period.${group.period}`)}</Text>
             <View style={styles.grid}>
               {group.slots.map(slot => {
                 const ok = validStarts.has(slot.time);

@@ -10,6 +10,7 @@ import { Pressable, Text, View } from 'react-native';
 import { resolveApiUrl, type BookingDetailResponse } from '../../api';
 import { useCreateReview } from '../../query';
 import { Avatar, BottomSheet, Button, Checkbox, TextField } from '../../shared/ui';
+import { useTranslation } from '../../i18n';
 import { makeStyles, useTheme } from '../../theme';
 
 /** Statuses a review is accepted for (the service took place, or the client didn't show). */
@@ -27,6 +28,7 @@ export function RatingSheet({ booking, target, onClose }: RatingSheetProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const createReview = useCreateReview();
+  const { t } = useTranslation();
   const [rating, setRating] = useState(0);
   const [text, setText] = useState('');
   const [reporting, setReporting] = useState(false);
@@ -66,20 +68,25 @@ export function RatingSheet({ booking, target, onClose }: RatingSheetProps) {
       visible={booking !== null}
       onClose={onClose}
       onShow={seed}
-      title={done ? undefined : target === 'master' ? 'Rate your master' : 'Rate your client'}
+      title={done ? undefined : target === 'master' ? t('reviews.rateMaster') : t('reviews.rateClient')}
       footer={
         done ? (
-          <Button label="Close" variant="secondary" onPress={onClose} />
+          <Button label={t('reviews.close')} variant="secondary" onPress={onClose} />
         ) : (
-          <Button label="Submit review" onPress={submit} disabled={rating === 0} loading={createReview.isPending} />
+          <Button
+            label={t('reviews.submit')}
+            onPress={submit}
+            disabled={rating === 0}
+            loading={createReview.isPending}
+          />
         )
       }
     >
       {done ? (
         <View style={styles.done}>
           <CircleCheck size={48} color={colors.success} strokeWidth={1.5} />
-          <Text style={styles.doneTitle}>Thank you!</Text>
-          <Text style={styles.doneText}>Your review helps others choose with confidence.</Text>
+          <Text style={styles.doneTitle}>{t('reviews.thanks')}</Text>
+          <Text style={styles.doneText}>{t('reviews.thanksText')}</Text>
         </View>
       ) : (
         <>
@@ -88,13 +95,17 @@ export function RatingSheet({ booking, target, onClose }: RatingSheetProps) {
             <Text style={styles.targetName}>{name}</Text>
           </View>
 
-          <View style={styles.stars} accessibilityRole="adjustable" accessibilityLabel={`Rating ${rating} of 5`}>
+          <View
+            style={styles.stars}
+            accessibilityRole="adjustable"
+            accessibilityLabel={t('reviews.ratingLabel', { rating })}
+          >
             {[1, 2, 3, 4, 5].map(n => (
               <Pressable
                 key={n}
                 onPress={() => setRating(n)}
                 accessibilityRole="button"
-                accessibilityLabel={`${n} star${n > 1 ? 's' : ''}`}
+                accessibilityLabel={t('reviews.stars', { count: n })}
                 hitSlop={4}
               >
                 <Star
@@ -110,7 +121,7 @@ export function RatingSheet({ booking, target, onClose }: RatingSheetProps) {
           <TextField
             value={text}
             onChangeText={setText}
-            placeholder="Share a few words (optional)"
+            placeholder={t('reviews.placeholder')}
             maxLength={2000}
             multiline
           />
@@ -119,20 +130,20 @@ export function RatingSheet({ booking, target, onClose }: RatingSheetProps) {
             <Checkbox
               checked={reporting}
               onChange={() => setReporting(v => !v)}
-              label={`Report a problem with this ${target}`}
+              label={target === 'master' ? t('reviews.reportMaster') : t('reviews.reportClient')}
             />
             {reporting && (
               <TextField
                 value={report}
                 onChangeText={setReport}
-                placeholder="What happened? Only admins will see this."
+                placeholder={t('reviews.reportPlaceholder')}
                 maxLength={2000}
                 multiline
               />
             )}
           </View>
 
-          {createReview.isError && <Text style={styles.error}>Could not send your review. Please try again.</Text>}
+          {createReview.isError && <Text style={styles.error}>{t('reviews.error')}</Text>}
         </>
       )}
     </BottomSheet>

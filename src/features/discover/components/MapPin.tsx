@@ -7,6 +7,7 @@ import { Image, Text, View } from 'react-native';
 import { resolveApiUrl, type MasterCardDto } from '../../../api';
 import { useTranslate } from '../../../i18n/language';
 import { firstName, formatPrice } from '../../../shared/format';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 
 interface MapPinProps {
@@ -18,17 +19,16 @@ export const MapPin = memo(function MapPinView({ master, selected }: MapPinProps
   const styles = useStyles();
   const { colors, palette } = useTheme();
   const tr = useTranslate();
+  const { t } = useTranslation();
   const label = `${formatPrice(master.startingPrice)} · ${firstName(master.displayName)}`;
 
   if (selected) {
     const avatar = resolveApiUrl(master.avatarUrl);
-    const overline = tr(master.category) || 'Master';
+    const overline = tr(master.category) || t('discover.master');
     return (
       <View style={styles.column}>
         <View style={styles.selectedBubble}>
-          <View style={styles.avatar}>
-            {avatar && <Image source={{ uri: avatar }} style={styles.avatarImage} />}
-          </View>
+          <View style={styles.avatar}>{avatar && <Image source={{ uri: avatar }} style={styles.avatarImage} />}</View>
           <View>
             <Text style={styles.overline} numberOfLines={1}>
               {overline}
@@ -46,8 +46,7 @@ export const MapPin = memo(function MapPinView({ master, selected }: MapPinProps
 
   // Dot colour hints at quality: top-rated peach, good lavender, others muted.
   const rating = master.rating ?? 0;
-  const dotColor =
-    rating >= 4.8 ? colors.primary : rating >= 4.5 ? palette.secondary[80] : colors.textSecondary;
+  const dotColor = rating >= 4.8 ? colors.primary : rating >= 4.5 ? palette.secondary[80] : colors.textSecondary;
 
   return (
     <View style={styles.column}>

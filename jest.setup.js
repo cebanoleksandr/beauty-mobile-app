@@ -24,3 +24,6 @@ jest.mock('@maplibre/maplibre-react-native', () => {
     },
   };
 });
+
+// Tests assert the English copy; the app itself follows the device language.
+require('./src/i18n').i18n.changeLanguage('en');

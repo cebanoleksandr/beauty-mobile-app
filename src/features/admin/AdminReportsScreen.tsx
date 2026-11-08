@@ -7,12 +7,14 @@ import React from 'react';
 import { Alert, Text, View } from 'react-native';
 import { useAdminReports, useResolveReport } from '../../query';
 import { Button, Card, EmptyState, ErrorState, LoadingState, PageTitle } from '../../shared/ui';
+import { useTranslation } from '../../i18n';
 import { makeStyles, useTheme } from '../../theme';
 import { TabScreen } from '../common/TabScreen';
 import { relativeTime } from './adminFormat';
 
 export function AdminReportsScreen() {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const reports = useAdminReports('OPEN');
   const resolve = useResolveReport();
@@ -24,13 +26,13 @@ export function AdminReportsScreen() {
         reports.refetch();
       }}
     >
-      <PageTitle title="Reports" subtitle="Complaints left together with reviews" />
+      <PageTitle title={t('admin.reports.title')} subtitle={t('admin.reports.subtitle')} />
       {reports.isPending ? (
         <LoadingState />
       ) : reports.isError ? (
         <ErrorState onRetry={() => reports.refetch()} />
       ) : reports.data.length === 0 ? (
-        <EmptyState Icon={Flag} title="No open reports" text="Complaints from clients and masters show up here." />
+        <EmptyState Icon={Flag} title={t('admin.reports.emptyTitle')} text={t('admin.reports.emptyText')} />
       ) : (
         <View style={styles.list}>
           {reports.data.map(r => (
@@ -38,19 +40,18 @@ export function AdminReportsScreen() {
               <View style={styles.header}>
                 <Flag size={14} color="#FB7185" />
                 <Text style={styles.who} numberOfLines={2}>
-                  <Text style={styles.strong}>{r.reporterName}</Text> reported{' '}
-                  <Text style={styles.strong}>{r.reportedUserName}</Text>
+                  {t('admin.reports.who', { reporter: r.reporterName, reported: r.reportedUserName })}
                 </Text>
                 <Text style={styles.time}>{relativeTime(r.createdAt)}</Text>
               </View>
               <Text style={styles.message}>{r.message}</Text>
               <Button
-                label="Mark as resolved"
+                label={t('admin.reports.resolve')}
                 compact
                 icon={<Check size={15} color={colors.background} />}
                 onPress={() =>
                   resolve.mutate(r.id, {
-                    onError: () => Alert.alert('Could not resolve', 'Please try again.'),
+                    onError: () => Alert.alert(t('admin.reports.resolveError'), t('common.pleaseTryAgain')),
                   })
                 }
                 loading={resolve.isPending && resolve.variables === r.id}

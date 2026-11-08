@@ -2,10 +2,12 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, Text } from 'react-native';
 import SearchAreaIcon from '../../../assets/icons/search-area.svg';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 
 export function SearchAreaButton({ onPress, loading }: { onPress: () => void; loading?: boolean }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   return (
     <Pressable
@@ -15,7 +17,7 @@ export function SearchAreaButton({ onPress, loading }: { onPress: () => void; lo
       style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
     >
       {loading ? <ActivityIndicator size="small" color={colors.primaryContainer} /> : <SearchAreaIcon />}
-      <Text style={styles.label}>Search this area</Text>
+      <Text style={styles.label}>{t('discover.searchArea')}</Text>
     </Pressable>
   );
 }

@@ -12,6 +12,7 @@ import { resolveApiUrl, type BookingDetailResponse } from '../../../api';
 import { useTranslate } from '../../../i18n/language';
 import { formatPrice } from '../../../shared/format';
 import { Avatar, Button, Card } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 import { startOf } from '../../bookings/bookingGroups';
 import { StatusPill } from '../../bookings/components/BookingCards';
@@ -41,6 +42,7 @@ export function MasterBookingCard({
   now = new Date(),
 }: { booking: BookingDetailResponse; now?: Date } & MasterBookingActions) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const tr = useTranslate();
   const pending = b.status === 'PENDING';
@@ -78,7 +80,7 @@ export function MasterBookingCard({
       {pending && onApprove && onReject && (
         <View style={styles.actions}>
           <Button
-            label="Approve"
+            label={t('master.booking.approve')}
             compact
             icon={<Check size={16} color={colors.background} strokeWidth={2.5} />}
             onPress={() => onApprove(b)}
@@ -86,7 +88,7 @@ export function MasterBookingCard({
             style={styles.flex}
           />
           <Button
-            label="Decline"
+            label={t('master.booking.decline')}
             compact
             variant="danger"
             icon={<X size={16} color="#FB7185" strokeWidth={2.5} />}
@@ -100,7 +102,7 @@ export function MasterBookingCard({
       {scheduled && started && onMarkMissed && (
         <View style={styles.actions}>
           <Button
-            label="Client didn't show up"
+            label={t('master.booking.noShow')}
             compact
             variant="danger"
             icon={<UserX size={15} color="#FB7185" />}
@@ -114,7 +116,7 @@ export function MasterBookingCard({
       {scheduled && !started && onReschedule && (
         <View style={styles.actions}>
           <Button
-            label="Reschedule"
+            label={t('master.booking.reschedule')}
             compact
             variant="secondary"
             icon={<CalendarClock size={15} color={colors.text} />}
@@ -128,7 +130,9 @@ export function MasterBookingCard({
       {RATEABLE_STATUSES.includes(b.status) && onRate && (
         <View style={styles.actions}>
           <Button
-            label={b.masterReviewRating !== null ? 'Edit client rating' : 'Rate client'}
+            label={
+              b.masterReviewRating !== null ? t('master.booking.editClientRating') : t('master.booking.rateClient')
+            }
             compact
             variant="secondary"
             icon={<Star size={15} color="#FBBF24" fill={b.masterReviewRating !== null ? '#FBBF24' : 'transparent'} />}

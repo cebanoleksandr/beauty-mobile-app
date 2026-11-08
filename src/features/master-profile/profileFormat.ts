@@ -1,4 +1,6 @@
 import type { AvailabilityDayDto, MasterServiceDto } from '../../api';
+import { i18n } from '../../i18n';
+import { weekdayDayMonth } from '../../i18n/dates';
 
 /** Local `YYYY-MM-DD` for a Date (slot dates from the backend are local too). */
 function isoDay(d: Date): string {
@@ -6,25 +8,21 @@ function isoDay(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** `Today` / `Tomorrow` / `Mon 12 Nov` for a `YYYY-MM-DD` date. */
+/** `Today` / `Tomorrow` / `Mon, Nov 12` (localized) for a `YYYY-MM-DD` date. */
 export function formatDayLabel(date: string, now = new Date()): string {
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
-  if (date === isoDay(now)) return 'Today';
-  if (date === isoDay(tomorrow)) return 'Tomorrow';
+  if (date === isoDay(now)) return i18n.t('dates.today');
+  if (date === isoDay(tomorrow)) return i18n.t('dates.tomorrow');
   const [y, m, d] = date.split('-').map(Number);
-  const day = new Date(y, m - 1, d);
-  return `${WEEKDAYS[day.getDay()]} ${d} ${MONTHS[m - 1]}`;
+  return weekdayDayMonth(new Date(y, m - 1, d));
 }
 
 /** First bookable slot: `Today, 16:30`, or null when the master has none open. */
 export function nextSlotLabel(days: readonly AvailabilityDayDto[] | undefined, now = new Date()): string | null {
   for (const day of days ?? []) {
     const slot = day.slots.find(s => s.available);
-    if (slot) return `${formatDayLabel(day.date, now)}, ${slot.time}`;
+    if (slot) return i18n.t('dates.dayTime', { day: formatDayLabel(day.date, now), time: slot.time });
   }
   return null;
 }
@@ -35,27 +33,20 @@ export function formatRelativeDate(date: string, now = new Date()): string {
   const then = new Date(y, m - 1, d);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const days = Math.round((today.getTime() - then.getTime()) / 86_400_000);
-  if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days} days ago`;
-  if (days < 30) {
-    const w = Math.floor(days / 7);
-    return `${w} week${w === 1 ? '' : 's'} ago`;
-  }
-  if (days < 365) {
-    const mo = Math.floor(days / 30);
-    return `${mo} month${mo === 1 ? '' : 's'} ago`;
-  }
-  const yr = Math.floor(days / 365);
-  return `${yr} year${yr === 1 ? '' : 's'} ago`;
+  if (days <= 0) return i18n.t('dates.today');
+  if (days === 1) return i18n.t('dates.yesterday');
+  if (days < 7) return i18n.t('dates.daysAgo', { count: days });
+  if (days < 30) return i18n.t('dates.weeksAgo', { count: Math.floor(days / 7) });
+  if (days < 365) return i18n.t('dates.monthsAgo', { count: Math.floor(days / 30) });
+  return i18n.t('dates.yearsAgo', { count: Math.floor(days / 365) });
 }
 
-/** `150 min`, `1 h`, `1 h 30 min`. */
+/** `45 min`, `1 h`, `1 h 30 min` (localized). */
 export function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return i18n.t('units.minutes', { value: minutes });
   const h = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest ? `${h} h ${rest} min` : `${h} h`;
+  return rest ? i18n.t('units.hoursMinutes', { hours: h, minutes: rest }) : i18n.t('units.hours', { value: h });
 }
 
 /** Initials for a review author avatar (`Camilla P.` → `CP`). */
@@ -69,8 +60,4 @@ export function initials(name: string): string {
 
 export function minPrice(services: readonly MasterServiceDto[]): number | null {
   return services.length ? Math.min(...services.map(s => s.price)) : null;
-}
-
-export function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? '' : 's'}`;
 }

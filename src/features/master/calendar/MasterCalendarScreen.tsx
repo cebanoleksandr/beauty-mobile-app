@@ -11,19 +11,22 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import type { BookingDetailResponse, SlotResponse } from '../../../api';
 import { useBookings, useCreateSlots, useMarkBookingMissed, useMasterSlots, useSetSlotDisabled } from '../../../query';
 import { BottomSheet, Button, ChoiceChips, EmptyState, ErrorState, FieldLabel, LoadingState } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
+import { weekdayDayMonth } from '../../../i18n/dates';
 import { makeStyles, useTheme } from '../../../theme';
 import { TabScreen } from '../../common/TabScreen';
 import { RatingSheet } from '../../reviews/RatingSheet';
 import { ClientSheet } from '../components/ClientSheet';
 import { MasterBookingCard } from '../components/MasterBookingCard';
 import { RescheduleSheet } from '../components/RescheduleSheet';
-import { addDays, dayHeader, dayKey, monthShort, parseDayKey, timeOf, weekdayShort } from '../masterDates';
+import { addDays, dayHeader, dayKey, parseDayKey, timeOf, weekdayShort } from '../masterDates';
 
 const DAYS_AHEAD = 14;
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 7); // 07 … 21
 
 export function MasterCalendarScreen() {
   const styles = useStyles();
+  const { t } = useTranslation();
   const today = useMemo(() => new Date(), []);
   const todayKey = dayKey(today);
   const days = useMemo(() => Array.from({ length: DAYS_AHEAD }, (_, i) => addDays(today, i)), [today]);
@@ -69,10 +72,10 @@ export function MasterCalendarScreen() {
   const error = bookings.isError || slots.isError;
 
   const onMarkMissed = (b: BookingDetailResponse) =>
-    Alert.alert('Mark as no-show?', `${b.clientName} didn't come to the appointment.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('master.bookings.noShowTitle'), t('master.bookings.noShowText', { name: b.clientName }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Mark no-show',
+        text: t('master.bookings.noShowConfirm'),
         style: 'destructive',
         onPress: () => markMissed.mutate(b.id),
       },
@@ -89,16 +92,16 @@ export function MasterCalendarScreen() {
       <View style={styles.titleRow}>
         <View style={styles.flex}>
           <Text style={styles.title} accessibilityRole="header">
-            Calendar
+            {t('master.calendar.title')}
           </Text>
           <Text style={styles.subtitle}>{dayHeader(selected, today)}</Text>
         </View>
         <Button
-          label="Free time"
+          label={t('master.calendar.freeTime')}
           compact
           icon={<Plus size={16} color={styles.addIcon.color} />}
           onPress={() => setAddFor(selected)}
-          accessibilityLabel="Add free time"
+          accessibilityLabel={t('master.calendar.addFreeTime')}
         />
       </View>
 
@@ -114,7 +117,7 @@ export function MasterCalendarScreen() {
         <LoadingState />
       ) : error ? (
         <ErrorState
-          text="Couldn't load your calendar. Try again"
+          text={t('master.calendar.loadError')}
           onRetry={() => {
             bookings.refetch();
             slots.refetch();
@@ -123,15 +126,21 @@ export function MasterCalendarScreen() {
       ) : visits.length === 0 && free.length === 0 ? (
         <EmptyState
           Icon={CalendarX2}
-          title="Nothing on this day"
-          text="Open some free time so clients can book you."
-          action={<Button label="Add free time" onPress={() => setAddFor(selected)} style={styles.stretch} />}
+          title={t('master.calendar.emptyTitle')}
+          text={t('master.calendar.emptyText')}
+          action={
+            <Button
+              label={t('master.calendar.addFreeTime')}
+              onPress={() => setAddFor(selected)}
+              style={styles.stretch}
+            />
+          }
         />
       ) : (
         <>
           {visits.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Visits ({visits.length})</Text>
+              <Text style={styles.sectionTitle}>{t('master.calendar.visits', { count: visits.length })}</Text>
               {visits.map(b => (
                 <MasterBookingCard
                   key={b.id}
@@ -148,8 +157,9 @@ export function MasterCalendarScreen() {
           {free.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>
-                Free slots · {openCount} open
-                {free.length > openCount ? `, ${free.length - openCount} closed` : ''}
+                {free.length > openCount
+                  ? t('master.calendar.freeSlotsClosed', { open: openCount, closed: free.length - openCount })
+                  : t('master.calendar.freeSlots', { open: openCount })}
               </Text>
               <View style={styles.slots}>
                 {free.map(s => (
@@ -161,14 +171,14 @@ export function MasterCalendarScreen() {
                       toggle.mutate(
                         { slotId: s.id, disabled: !s.disabled },
                         {
-                          onError: () => Alert.alert('Could not update the slot', 'Please try again.'),
+                          onError: () => Alert.alert(t('master.calendar.slotError'), t('common.pleaseTryAgain')),
                         },
                       )
                     }
                   />
                 ))}
               </View>
-              <Text style={styles.hint}>Tap a slot to close it for booking, tap again to reopen.</Text>
+              <Text style={styles.hint}>{t('master.calendar.slotHint')}</Text>
             </View>
           )}
         </>
@@ -196,6 +206,7 @@ function WeekStrip({
   marked: (key: string) => boolean;
 }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const ref = useRef<React.ComponentRef<typeof ScrollView>>(null);
   useEffect(() => {
     const index = days.findIndex(d => dayKey(d) === selected);
@@ -218,7 +229,7 @@ function WeekStrip({
             style={[styles.day, active && styles.dayActive]}
           >
             <Text style={[styles.dayName, active && styles.dayTextActive, isToday && !active && styles.today]}>
-              {isToday ? 'Today' : weekdayShort(d)}
+              {isToday ? t('dates.today') : weekdayShort(d)}
             </Text>
             <Text style={[styles.dayNumber, active && styles.dayTextActive]}>{d.getDate()}</Text>
             <View style={[styles.dot, marked(key) ? (active ? styles.dotActive : styles.dotOn) : undefined]} />
@@ -231,6 +242,7 @@ function WeekStrip({
 
 function SlotChip({ slot, busy, onToggle }: { slot: SlotResponse; busy: boolean; onToggle: () => void }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const closed = slot.disabled;
   return (
@@ -239,7 +251,9 @@ function SlotChip({ slot, busy, onToggle }: { slot: SlotResponse; busy: boolean;
       disabled={busy}
       accessibilityRole="switch"
       accessibilityState={{ checked: !closed, busy }}
-      accessibilityLabel={`${timeOf(slot.startTime)} ${closed ? 'closed' : 'open'}`}
+      accessibilityLabel={t(closed ? 'master.calendar.slotClosed' : 'master.calendar.slotOpen', {
+        time: timeOf(slot.startTime),
+      })}
       style={({ pressed }) => [styles.slot, closed && styles.slotClosed, (pressed || busy) && styles.pressed]}
     >
       {closed ? <Lock size={12} color={colors.textSecondary} /> : <LockOpen size={12} color={colors.primary} />}
@@ -258,6 +272,7 @@ function AddSlotsSheet({
   onSaved: (key: string) => void;
 }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const create = useCreateSlots();
   const [day, setDay] = useState('');
@@ -271,10 +286,10 @@ function AddSlotsSheet({
       const d = addDays(today, i);
       return {
         value: dayKey(d),
-        label: i === 0 ? 'Today' : `${weekdayShort(d)} ${d.getDate()}`,
+        label: i === 0 ? t('dates.today') : `${weekdayShort(d)} ${d.getDate()}`,
       };
     });
-  }, []);
+  }, [t]);
 
   const save = () =>
     create.mutate(
@@ -284,7 +299,7 @@ function AddSlotsSheet({
           onSaved(day);
           onClose();
         },
-        onError: () => Alert.alert('Could not add free time', 'Please try again.'),
+        onError: () => Alert.alert(t('master.calendar.addError'), t('common.pleaseTryAgain')),
       },
     );
 
@@ -297,13 +312,11 @@ function AddSlotsSheet({
         setDay(dateKey ?? dayKey(new Date()));
         create.reset();
       }}
-      title="Add free time"
-      subtitle={
-        d ? `${weekdayShort(d)}, ${monthShort(d)} ${d.getDate()} — clients can book 30-minute slots` : undefined
-      }
+      title={t('master.calendar.addFreeTime')}
+      subtitle={d ? t('master.calendar.addSubtitle', { date: weekdayDayMonth(d) }) : undefined}
       footer={
         <Button
-          label={count ? `Open ${count} slots` : 'Pick a time range'}
+          label={count ? t('master.calendar.openSlots', { count }) : t('master.calendar.pickRange')}
           icon={count ? <CalendarPlus size={16} color={colors.background} /> : undefined}
           onPress={save}
           disabled={!count || !day}
@@ -311,9 +324,9 @@ function AddSlotsSheet({
         />
       }
     >
-      <FieldLabel>Day</FieldLabel>
-      <ChoiceChips options={days} value={day} onChange={setDay} accessibilityLabel="Day" />
-      <FieldLabel>From</FieldLabel>
+      <FieldLabel>{t('master.reschedule.days')}</FieldLabel>
+      <ChoiceChips options={days} value={day} onChange={setDay} accessibilityLabel={t('master.reschedule.days')} />
+      <FieldLabel>{t('master.calendar.from')}</FieldLabel>
       <ChoiceChips
         options={HOURS.filter(h => h < to).map(h => ({
           value: h,
@@ -321,9 +334,9 @@ function AddSlotsSheet({
         }))}
         value={from}
         onChange={setFrom}
-        accessibilityLabel="From"
+        accessibilityLabel={t('master.calendar.from')}
       />
-      <FieldLabel>Until</FieldLabel>
+      <FieldLabel>{t('master.calendar.until')}</FieldLabel>
       <ChoiceChips
         options={HOURS.filter(h => h > from).map(h => ({
           value: h,
@@ -331,12 +344,15 @@ function AddSlotsSheet({
         }))}
         value={to}
         onChange={setTo}
-        accessibilityLabel="Until"
+        accessibilityLabel={t('master.calendar.until')}
       />
       {count > 0 && (
         <Text style={styles.hint}>
-          {count} slots from {String(from).padStart(2, '0')}:00 to {String(to).padStart(2, '0')}:00. Existing slots are
-          kept.
+          {t('master.calendar.rangeHint', {
+            count,
+            from: `${String(from).padStart(2, '0')}:00`,
+            to: `${String(to).padStart(2, '0')}:00`,
+          })}
         </Text>
       )}
     </BottomSheet>

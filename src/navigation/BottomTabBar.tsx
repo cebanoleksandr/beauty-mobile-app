@@ -8,9 +8,11 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React, { type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from '../i18n';
 import { makeStyles } from '../theme';
 
 export interface TabSpec {
+  /** i18n key of the label. */
   label: string;
   renderIcon: (focused: boolean) => ReactNode;
 }
@@ -24,11 +26,13 @@ interface Props extends BottomTabBarProps {
 export function BottomTabBar({ state, navigation, tabs, badges }: Props) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>
       {state.routes.map((route, index) => {
         const tab = tabs[route.name];
+        const label = t(tab.label);
         const focused = state.index === index;
         const badge = badges?.[route.name] ?? 0;
 
@@ -47,7 +51,7 @@ export function BottomTabBar({ state, navigation, tabs, badges }: Props) {
             onPress={onPress}
             accessibilityRole="tab"
             accessibilityState={{ selected: focused }}
-            accessibilityLabel={badge ? `${tab.label}, ${badge} new` : tab.label}
+            accessibilityLabel={badge ? t('nav.newCount', { label, count: badge }) : label}
             style={styles.item}
           >
             <View style={styles.iconBox}>
@@ -59,7 +63,7 @@ export function BottomTabBar({ state, navigation, tabs, badges }: Props) {
               )}
             </View>
             <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={1}>
-              {tab.label}
+              {label}
             </Text>
             {focused && <View style={styles.activeDot} />}
           </Pressable>

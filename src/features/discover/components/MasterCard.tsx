@@ -13,6 +13,7 @@ import PersonIcon from '../../../assets/icons/tab-profile.svg';
 import { resolveApiUrl, type MasterCardDto } from '../../../api';
 import { useTranslate } from '../../../i18n/language';
 import { formatDistance, formatPrice, formatRating } from '../../../shared/format';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 
 export const MASTER_CARD_WIDTH = 156;
@@ -38,6 +39,7 @@ export const MasterCard = memo(function MasterCardView({
 }: MasterCardProps) {
   const styles = useStyles();
   const tr = useTranslate();
+  const { t } = useTranslation();
   const avatar = resolveApiUrl(master.avatarUrl);
   const rating = formatRating(master.rating);
   const distance = formatDistance(master.distanceMeters);
@@ -58,7 +60,7 @@ export const MasterCard = memo(function MasterCardView({
           hitSlop={8}
           accessibilityRole="button"
           accessibilityState={{ selected: favorite }}
-          accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
+          accessibilityLabel={favorite ? t('discover.card.removeFavorite') : t('discover.card.addFavorite')}
           style={styles.favorite}
         >
           {favorite ? <BookmarkFilledIcon /> : <BookmarkIcon />}
@@ -86,7 +88,7 @@ export const MasterCard = memo(function MasterCardView({
       </View>
 
       <Text style={styles.priceRow} numberOfLines={1}>
-        <Text style={styles.priceFrom}>from </Text>
+        <Text style={styles.priceFrom}>{t('discover.card.from')}</Text>
         <Text style={styles.price}>{formatPrice(master.startingPrice)}</Text>
       </Text>
 
@@ -99,7 +101,7 @@ export const MasterCard = memo(function MasterCardView({
           pressed && styles.pressed,
         ]}
       >
-        <Text style={[styles.bookLabel, selected && styles.bookLabelPrimary]}>Book</Text>
+        <Text style={[styles.bookLabel, selected && styles.bookLabelPrimary]}>{t('discover.card.book')}</Text>
       </Pressable>
     </Pressable>
   );

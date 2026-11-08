@@ -2,13 +2,15 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import StepCheck from '../../../assets/icons/booking/step-check.svg';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 
-const STEPS = ['Service', 'Date & Time', 'Review'] as const;
+const STEPS = ['booking.steps.service', 'booking.steps.datetime', 'booking.steps.review'] as const;
 
 /** `current` is 1-based; earlier steps render as done. */
 export function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   return (
     <View style={styles.root}>
       <View style={styles.labels}>
@@ -18,10 +20,14 @@ export function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
           return (
             <View key={label} style={styles.step} accessibilityState={{ selected: state === 'active' }}>
               <View style={[styles.badge, styles[`badge_${state}`]]}>
-                {state === 'done' ? <StepCheck /> : <Text style={[styles.badgeText, styles[`badgeText_${state}`]]}>{n}</Text>}
+                {state === 'done' ? (
+                  <StepCheck />
+                ) : (
+                  <Text style={[styles.badgeText, styles[`badgeText_${state}`]]}>{n}</Text>
+                )}
               </View>
               <Text style={[styles.label, styles[`label_${state}`]]}>
-                {n}. {label}
+                {n}. {t(label)}
               </Text>
             </View>
           );
@@ -31,7 +37,11 @@ export function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
         {STEPS.map((label, i) => (
           <View
             key={label}
-            style={[styles.segment, i + 1 <= current ? styles.segmentOn : styles.segmentOff, i + 1 === current && styles.segmentCurrent]}
+            style={[
+              styles.segment,
+              i + 1 <= current ? styles.segmentOn : styles.segmentOff,
+              i + 1 === current && styles.segmentCurrent,
+            ]}
           />
         ))}
       </View>

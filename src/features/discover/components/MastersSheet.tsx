@@ -8,6 +8,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View, useWindowDimensions
 import ListViewIcon from '../../../assets/icons/list-view.svg';
 import MapViewIcon from '../../../assets/icons/tab-map-active.svg';
 import type { MasterCardDto } from '../../../api';
+import { useTranslation } from '../../../i18n';
 import { makeStyles, useTheme } from '../../../theme';
 import { countMasters } from '../searchFilters';
 import { MASTER_CARD_WIDTH, MasterCard } from './MasterCard';
@@ -51,6 +52,7 @@ export const MastersSheet = forwardRef<MastersSheetRef, MastersSheetProps>(funct
 ) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const carouselRef = useRef<FlatList<MasterCardDto>>(null);
   const gridCardWidth = (width - SIDE_PADDING * 2 - CARD_GAP) / 2;
@@ -85,13 +87,13 @@ export const MastersSheet = forwardRef<MastersSheetRef, MastersSheetProps>(funct
         <ActivityIndicator color={colors.primary} />
       ) : error ? (
         <>
-          <Text style={styles.emptyText}>Couldn't load masters.</Text>
+          <Text style={styles.emptyText}>{t('discover.sheet.loadError')}</Text>
           <Pressable onPress={onRetry} accessibilityRole="button">
-            <Text style={styles.retry}>Try again</Text>
+            <Text style={styles.retry}>{t('common.tryAgain')}</Text>
           </Pressable>
         </>
       ) : (
-        <Text style={styles.emptyText}>No masters here yet. Try moving the map or changing filters.</Text>
+        <Text style={styles.emptyText}>{t('discover.sheet.empty')}</Text>
       )}
     </View>
   );
@@ -102,14 +104,16 @@ export const MastersSheet = forwardRef<MastersSheetRef, MastersSheetProps>(funct
       <View style={styles.titleRow}>
         <View style={styles.titleWrap}>
           <Text style={styles.title} numberOfLines={1}>
-            Masters nearby
+            {t('discover.sheet.title')}
           </Text>
-          {!loading && <Text style={styles.count}>({countMasters(masters)} found)</Text>}
+          {!loading && <Text style={styles.count}>{t('discover.sheet.found', { count: countMasters(masters) })}</Text>}
           {loading && masters.length > 0 && <ActivityIndicator size="small" color={colors.textSecondary} />}
         </View>
         <Pressable onPress={onToggleListMode} accessibilityRole="button" hitSlop={8} style={styles.viewToggle}>
           {listMode ? <MapViewIcon /> : <ListViewIcon />}
-          <Text style={styles.viewToggleLabel}>{listMode ? 'Map view' : 'List view'}</Text>
+          <Text style={styles.viewToggleLabel}>
+            {listMode ? t('discover.sheet.mapView') : t('discover.sheet.listView')}
+          </Text>
         </Pressable>
       </View>
 

@@ -13,16 +13,7 @@
  * the profile (the detail endpoint doesn't return them).
  */
 import React, { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BookmarkIcon from '../../assets/icons/bookmark.svg';
 import BookmarkFilledIcon from '../../assets/icons/custom/bookmark-filled.svg';
@@ -41,13 +32,14 @@ import { useMasterAvailabilityLive } from '../../realtime';
 import { formatDistance, formatPrice, formatRating } from '../../shared/format';
 import { openDirections } from '../../shared/openDirections';
 import { AmbientGlow } from '../../shared/ui';
+import { useTranslation } from '../../i18n';
 import { makeStyles } from '../../theme';
 import { favoritesStore, useFavoriteIds } from '../favorites/favoritesStore';
 import { PortfolioGallery } from './components/PortfolioGallery';
 import { ProfileTabs, type ProfileTab } from './components/ProfileTabs';
 import { ReviewCard, Stars } from './components/ReviewCard';
 import { ServiceRow } from './components/ServiceRow';
-import { minPrice, nextSlotLabel, plural } from './profileFormat';
+import { minPrice, nextSlotLabel } from './profileFormat';
 
 export interface MasterPreview {
   distanceMeters?: number | null;
@@ -70,6 +62,7 @@ const HEADER_OVERLAP = 80;
 
 export function MasterProfileScreen({ masterId, preview, onBack, onBook }: MasterProfileScreenProps) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const detail = useMasterDetail(masterId);
   const availability = useMasterAvailability(masterId);
@@ -92,11 +85,13 @@ export function MasterProfileScreen({ masterId, preview, onBack, onBook }: Maste
           {detail.isError ? (
             <>
               <Text style={styles.stateTitle}>
-                {detail.error instanceof ApiError && detail.error.isNotFound ? 'Master not found' : "Couldn't load profile"}
+                {detail.error instanceof ApiError && detail.error.isNotFound
+                  ? t('profile.notFound')
+                  : t('profile.loadError')}
               </Text>
               {!(detail.error instanceof ApiError && detail.error.isNotFound) && (
                 <Pressable onPress={() => detail.refetch()} accessibilityRole="button">
-                  <Text style={styles.retry}>Try again</Text>
+                  <Text style={styles.retry}>{t('common.tryAgain')}</Text>
                 </Pressable>
               )}
             </>
@@ -108,14 +103,14 @@ export function MasterProfileScreen({ masterId, preview, onBack, onBook }: Maste
 
       {/* Floating header actions */}
       <View style={[styles.topBar, { paddingTop: insets.top + 16 }]} pointerEvents="box-none">
-        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Back" style={styles.glassButton}>
+        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.glassButton}>
           <BackIcon />
         </Pressable>
         <Pressable
           onPress={() => favoritesStore.toggle(masterId)}
           accessibilityRole="button"
           accessibilityState={{ selected: favorite }}
-          accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
+          accessibilityLabel={favorite ? t('discover.card.removeFavorite') : t('discover.card.addFavorite')}
           style={styles.glassButton}
         >
           {favorite ? <BookmarkFilledIcon /> : <BookmarkIcon />}
@@ -139,15 +134,17 @@ function ProfileContent({
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const tr = useTranslate();
+  const { t } = useTranslation();
 
   const tabs = useMemo(() => {
     const list: ProfileTab<TabKey>[] = [];
-    if (master.portfolio.length) list.push({ key: 'portfolio', label: `Portfolio (${master.portfolio.length})` });
-    list.push({ key: 'services', label: `Services (${master.services.length})` });
-    list.push({ key: 'reviews', label: `Reviews (${master.reviewCount})` });
-    if (master.bio?.trim()) list.push({ key: 'about', label: 'About' });
+    if (master.portfolio.length)
+      list.push({ key: 'portfolio', label: t('profile.tabs.portfolio', { count: master.portfolio.length }) });
+    list.push({ key: 'services', label: t('profile.tabs.services', { count: master.services.length }) });
+    list.push({ key: 'reviews', label: t('profile.tabs.reviews', { count: master.reviewCount }) });
+    if (master.bio?.trim()) list.push({ key: 'about', label: t('profile.tabs.about') });
     return list;
-  }, [master]);
+  }, [master, t]);
 
   const [tab, setTab] = useState<TabKey>(tabs[0].key);
   const [selected, setSelected] = useState<MasterServiceDto | null>(null);
@@ -161,7 +158,7 @@ function ProfileContent({
   // Opens the booking screen; the service picked here (if any) comes preselected.
   const book = () => {
     if (!master.services.length) {
-      Alert.alert('No services yet', 'This master has not published any services.');
+      Alert.alert(t('profile.noServicesTitle'), t('profile.noServicesText'));
       return;
     }
     onBook(master, selected);
@@ -174,7 +171,7 @@ function ProfileContent({
   const showDirections = () => {
     if (!hasCoords) return;
     openDirections(preview!.lat!, preview!.lng!).catch(() =>
-      Alert.alert('Could not open maps', 'Please check that a maps app or browser is available.'),
+      Alert.alert(t('profile.mapsErrorTitle'), t('profile.mapsErrorText')),
     );
   };
 
@@ -207,7 +204,7 @@ function ProfileContent({
               {master.verified && (
                 <View style={styles.topBadge}>
                   <View style={styles.topBadgeDot} />
-                  <Text style={styles.topBadgeText}>Top master</Text>
+                  <Text style={styles.topBadgeText}>{t('profile.topMaster')}</Text>
                 </View>
               )}
             </View>
@@ -218,7 +215,7 @@ function ProfileContent({
                   {master.displayName}
                 </Text>
                 {master.verified && (
-                  <View style={styles.verified} accessibilityLabel="Verified master">
+                  <View style={styles.verified} accessibilityLabel={t('profile.verified')}>
                     <View style={styles.verifiedBleed}>
                       <VerifiedIcon />
                     </View>
@@ -242,13 +239,17 @@ function ProfileContent({
                     <Text style={styles.metricValue}>{rating ?? '—'}</Text>
                   </View>
                 }
-                label={plural(master.reviewCount, 'review')}
+                label={t('profile.reviewsCount', { count: master.reviewCount })}
               />
-              <Metric value={<Text style={styles.metricValue}>{master.services.length}</Text>} label="Services" divider />
+              <Metric
+                value={<Text style={styles.metricValue}>{master.services.length}</Text>}
+                label={t('profile.services')}
+                divider
+              />
               {master.portfolio.length > 0 && (
                 <Metric
                   value={<Text style={styles.metricValue}>{master.portfolio.length}</Text>}
-                  label="Works"
+                  label={t('profile.works')}
                   divider
                 />
               )}
@@ -261,13 +262,13 @@ function ProfileContent({
                 style={({ pressed }) => [styles.bookButton, pressed && styles.pressed]}
               >
                 <CalendarIcon />
-                <Text style={styles.bookLabel}>Book Appointment</Text>
+                <Text style={styles.bookLabel}>{t('profile.bookAppointment')}</Text>
               </Pressable>
               {!!master.username && (
                 <Pressable
                   onPress={openTelegram}
                   accessibilityRole="button"
-                  accessibilityLabel={`Message ${master.displayName} in Telegram`}
+                  accessibilityLabel={t('profile.messageInTelegram', { name: master.displayName })}
                   style={({ pressed }) => [styles.squareButton, pressed && styles.pressed]}
                 >
                   <MessageIcon />
@@ -277,7 +278,7 @@ function ProfileContent({
                 <Pressable
                   onPress={showDirections}
                   accessibilityRole="button"
-                  accessibilityLabel="Get directions in Google Maps"
+                  accessibilityLabel={t('profile.directions')}
                   style={({ pressed }) => [styles.squareButton, pressed && styles.pressed]}
                 >
                   <DirectionsIcon />
@@ -309,7 +310,7 @@ function ProfileContent({
                 ))}
               </View>
             ) : (
-              <Text style={styles.empty}>No services published yet.</Text>
+              <Text style={styles.empty}>{t('profile.noServices')}</Text>
             ))}
 
           {tab === 'reviews' && (
@@ -319,12 +320,12 @@ function ProfileContent({
                   <Text style={styles.sectionTitle}>{rating ?? '—'}</Text>
                   {master.rating !== null && <Stars rating={master.rating} />}
                 </View>
-                <Text style={styles.reviewsCount}>{plural(master.reviewCount, 'rating')}</Text>
+                <Text style={styles.reviewsCount}>{t('profile.ratingsCount', { count: master.reviewCount })}</Text>
               </View>
               {master.reviews.length ? (
                 master.reviews.map(review => <ReviewCard key={review.id} review={review} />)
               ) : (
-                <Text style={styles.empty}>No reviews yet.</Text>
+                <Text style={styles.empty}>{t('profile.noReviews')}</Text>
               )}
             </View>
           )}
@@ -342,7 +343,7 @@ function ProfileContent({
         <View style={styles.bottomInfo}>
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel} numberOfLines={1}>
-              {selected ? tr(selected.name) : 'Starting from'}
+              {selected ? tr(selected.name) : t('profile.startingFrom')}
             </Text>
             <Text style={styles.priceValue}>{formatPrice(selected ? selected.price : fromPrice)}</Text>
           </View>
@@ -358,7 +359,7 @@ function ProfileContent({
           accessibilityRole="button"
           style={({ pressed }) => [styles.bookNow, pressed && styles.pressed]}
         >
-          <Text style={styles.bookNowLabel}>Book Now</Text>
+          <Text style={styles.bookNowLabel}>{t('profile.bookNow')}</Text>
           <ArrowRightIcon />
         </Pressable>
       </View>

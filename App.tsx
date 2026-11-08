@@ -4,6 +4,8 @@
  * @format
  */
 
+// i18n must be initialised before any screen renders.
+import './src/i18n';
 import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

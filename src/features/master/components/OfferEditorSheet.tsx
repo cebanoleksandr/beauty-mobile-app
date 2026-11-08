@@ -11,6 +11,7 @@ import type { CategoryDto, OfferResponse } from '../../../api';
 import { useTranslate } from '../../../i18n/language';
 import { useCreateCatalogRequest } from '../../../query';
 import { BottomSheet, Button, ChoiceChips, FieldLabel, TextField } from '../../../shared/ui';
+import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 import { DURATION_OPTIONS, formatDurationOption, type OfferFormValue, type ServicePointOption } from '../offerForm';
 import { LocationPicker } from './LocationPicker';
@@ -25,11 +26,6 @@ interface OfferEditorSheetProps {
   onSave: (value: OfferFormValue) => void;
   onClose: () => void;
 }
-
-const DURATIONS = DURATION_OPTIONS.map(m => ({
-  value: m,
-  label: formatDurationOption(m),
-}));
 
 function initialValue(editing?: OfferResponse | null): OfferFormValue {
   return {
@@ -60,6 +56,8 @@ export function OfferEditorSheet({
   const styles = useStyles();
   const tr = useTranslate();
   const createRequest = useCreateCatalogRequest();
+  const { t } = useTranslation();
+  const durations = DURATION_OPTIONS.map(m => ({ value: m, label: formatDurationOption(m) }));
   const [value, setValue] = useState<OfferFormValue>(() => initialValue(editing));
   const [categoryId, setCategoryId] = useState('');
   const [requesting, setRequesting] = useState<'CATEGORY' | 'SERVICE' | null>(null);
@@ -88,11 +86,11 @@ export function OfferEditorSheet({
       },
       {
         onSuccess: () => {
-          Alert.alert('Request sent', 'Admins will review it. You will be notified in Telegram.');
+          Alert.alert(t('master.offer.requestSentTitle'), t('master.offer.requestSentText'));
           setRequesting(null);
           setRequestName('');
         },
-        onError: () => Alert.alert('Could not send the request', 'Please try again.'),
+        onError: () => Alert.alert(t('master.offer.requestError'), t('common.pleaseTryAgain')),
       },
     );
   };
@@ -102,11 +100,11 @@ export function OfferEditorSheet({
       visible={visible}
       onClose={onClose}
       onShow={reset}
-      title={editing ? 'Edit service' : 'Add a service'}
-      subtitle={editing ? tr(editing.serviceName) : 'Pick a service from the catalog and set your price'}
+      title={editing ? t('master.offer.editTitle') : t('master.offer.addTitle')}
+      subtitle={editing ? tr(editing.serviceName) : t('master.offer.addSubtitle')}
       footer={
         <Button
-          label={editing ? 'Save changes' : 'Save service'}
+          label={editing ? t('master.offer.saveChanges') : t('master.offer.saveService')}
           onPress={() => valid && onSave(value)}
           disabled={!valid}
           loading={saving}
@@ -115,50 +113,52 @@ export function OfferEditorSheet({
     >
       {!editing && (
         <>
-          <FieldLabel>Category</FieldLabel>
+          <FieldLabel>{t('master.offer.category')}</FieldLabel>
           <SelectField
             value={categoryId}
             options={catalog.map(c => ({ value: c.id, label: tr(c.name) }))}
-            placeholder="Select a category"
-            accessibilityLabel="Category"
+            placeholder={t('master.offer.selectCategory')}
+            accessibilityLabel={t('master.offer.category')}
             onChange={id => {
               setCategoryId(id);
               patch({ serviceDefinitionId: '' });
             }}
-            extraLabel="Request a new category"
+            extraLabel={t('master.offer.requestCategory')}
             onExtra={() => setRequesting('CATEGORY')}
           />
 
-          <FieldLabel>Service</FieldLabel>
+          <FieldLabel>{t('master.offer.service')}</FieldLabel>
           <SelectField
             value={value.serviceDefinitionId}
             options={(category?.definitions ?? []).map(d => ({
               value: d.id,
               label: tr(d.name),
             }))}
-            placeholder={category ? 'Select a service' : 'Choose a category first'}
-            accessibilityLabel="Service"
+            placeholder={category ? t('master.offer.selectService') : t('master.offer.categoryFirst')}
+            accessibilityLabel={t('master.offer.service')}
             disabled={!category}
             onChange={id => patch({ serviceDefinitionId: id })}
-            extraLabel={category ? 'Request a new service' : undefined}
+            extraLabel={category ? t('master.offer.requestService') : undefined}
             onExtra={() => setRequesting('SERVICE')}
           />
 
           {requesting && (
             <View style={styles.request}>
               <Text style={styles.requestTitle}>
-                {requesting === 'CATEGORY' ? 'Suggest a category' : `Suggest a service in ${tr(category?.name)}`}
+                {requesting === 'CATEGORY'
+                  ? t('master.offer.suggestCategory')
+                  : t('master.offer.suggestService', { category: tr(category?.name) })}
               </Text>
               <TextField
                 value={requestName}
                 onChangeText={setRequestName}
-                placeholder="Name, e.g. “Lash lift”"
+                placeholder={t('master.offer.requestPlaceholder')}
                 maxLength={120}
                 autoFocus
               />
               <View style={styles.requestActions}>
                 <Button
-                  label="Cancel"
+                  label={t('common.cancel')}
                   variant="secondary"
                   compact
                   style={styles.flex}
@@ -168,7 +168,7 @@ export function OfferEditorSheet({
                   }}
                 />
                 <Button
-                  label="Send request"
+                  label={t('master.offer.sendRequest')}
                   compact
                   style={styles.flex}
                   disabled={!requestName.trim()}
@@ -181,7 +181,7 @@ export function OfferEditorSheet({
         </>
       )}
 
-      <FieldLabel>Price, ₴</FieldLabel>
+      <FieldLabel>{t('master.offer.price')}</FieldLabel>
       <TextField
         value={value.price > 0 ? String(value.price) : ''}
         onChangeText={raw => {
@@ -189,29 +189,29 @@ export function OfferEditorSheet({
           patch({ price: digits ? Number(digits) : 0 });
         }}
         keyboardType="number-pad"
-        placeholder="e.g. 800"
+        placeholder={t('master.offer.pricePlaceholder')}
         maxLength={7}
-        accessibilityLabel="Price"
+        accessibilityLabel={t('master.offer.priceLabel')}
       />
 
-      <FieldLabel>Duration</FieldLabel>
+      <FieldLabel>{t('master.offer.duration')}</FieldLabel>
       <ChoiceChips
-        options={DURATIONS}
+        options={durations}
         value={value.durationMinutes || null}
         onChange={m => patch({ durationMinutes: m })}
-        accessibilityLabel="Duration"
+        accessibilityLabel={t('master.offer.duration')}
       />
 
-      <FieldLabel>Description (optional)</FieldLabel>
+      <FieldLabel>{t('master.offer.description')}</FieldLabel>
       <TextField
         value={value.description}
         onChangeText={description => patch({ description })}
-        placeholder="What's included, materials, aftercare…"
+        placeholder={t('master.offer.descriptionPlaceholder')}
         maxLength={1000}
         multiline
       />
 
-      <FieldLabel>Location</FieldLabel>
+      <FieldLabel>{t('master.offer.location')}</FieldLabel>
       <LocationPicker
         value={value.location}
         onChange={location => patch({ location })}

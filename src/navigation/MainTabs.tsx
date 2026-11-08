@@ -5,7 +5,7 @@ import React from 'react';
 import { BookingsScreen } from '../features/bookings/BookingsScreen';
 import { MapSearchScreen } from '../features/discover/MapSearchScreen';
 import { FavoritesScreen } from '../features/favorites/FavoritesScreen';
-import { ProfileScreen } from '../features/profile/ProfileScreen';
+import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { BottomTabBar } from './BottomTabBar';
 import type { MainTabParamList, RootStackParamList } from './types';
 
@@ -45,13 +45,22 @@ function BookingsRoute({ navigation }: BookingsProps) {
   );
 }
 
+type ProfileProps = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, 'Profile'>,
+  NativeStackScreenProps<RootStackParamList>
+>;
+
+function SettingsRoute({ navigation }: ProfileProps) {
+  return <SettingsScreen onOpenMasterProfile={masterId => navigation.navigate('MasterProfile', { masterId })} />;
+}
+
 export function MainTabs() {
   return (
     <Tab.Navigator tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
       <Tab.Screen name="Discover" component={DiscoverRoute} />
       <Tab.Screen name="Bookings" component={BookingsRoute} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={SettingsRoute} />
     </Tab.Navigator>
   );
 }

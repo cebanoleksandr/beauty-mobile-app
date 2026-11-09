@@ -48,7 +48,8 @@ import { resolveApiUrl, userService, type UserContext, type UserResponse } from 
 import { useSignOut } from '../../auth';
 import { useMe, useUpdateMe } from '../../query';
 import { formatRating } from '../../shared/format';
-import { AmbientGlow, BottomSheet, RadioGroup } from '../../shared/ui';
+import { AmbientGlow, BottomSheet, PageTitle, RadioGroup } from '../../shared/ui';
+import { DiscoverHeader } from '../discover/components/DiscoverHeader';
 import {
   deviceLanguage,
   i18n,
@@ -73,7 +74,6 @@ const LANGUAGE_OPTIONS: LanguagePreference[] = ['system', 'uk', 'en', 'ru'];
 export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: SettingsScreenProps) {
   const styles = useStyles();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const { data: me, isPending, isError, refetch } = useMe();
   const signOut = useSignOut();
   const { t } = useTranslation();
@@ -89,11 +89,7 @@ export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: Settings
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: insets.top }]}>
-        <Text style={styles.headerTitle} accessibilityRole="header">
-          {t('settings.title')}
-        </Text>
-      </View>
+      <DiscoverHeader />
 
       {!me ? (
         <View style={styles.center}>
@@ -109,6 +105,7 @@ export function SettingsScreen({ onOpenMasterProfile, onBecomeMaster }: Settings
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
+          <PageTitle title={t('settings.title')} />
           <ProfileHeader me={me} />
           <WorkspaceCard me={me} onBecomeMaster={onBecomeMaster} />
 
@@ -460,21 +457,6 @@ const useStyles = makeStyles(t => ({
   link: { ...t.typography.labelLarge, color: t.colors.primary },
   pressed: { opacity: t.opacity.pressed },
 
-  header: {
-    borderBottomWidth: t.borderWidth.thin,
-    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
-    backgroundColor: t.colors.chrome,
-  },
-  headerTitle: {
-    height: 56,
-    textAlignVertical: 'center',
-    lineHeight: 56,
-    textAlign: 'center',
-    fontFamily: t.fontFamily.semibold,
-    fontSize: 18,
-    letterSpacing: -0.45,
-    color: t.colors.text,
-  },
   content: {
     paddingTop: t.spacing.xxl,
     paddingHorizontal: t.spacing.xl,

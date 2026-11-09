@@ -62,7 +62,7 @@ export function LoginScreen() {
       <View style={[styles.content, { paddingBottom: Math.max(32, insets.bottom + 16) }]}>
         <View style={styles.intro}>
           <Text style={styles.wordmark} accessibilityRole="header">
-            MASTERS
+            {t('common.brand')}
           </Text>
           <Text style={styles.tagline}>{t('auth.tagline')}</Text>
           <Text style={styles.description}>{t('auth.description')}</Text>
@@ -181,6 +181,7 @@ const useStyles = makeStyles(t => ({
     lineHeight: 40,
     letterSpacing: 3.2,
     textAlign: 'center',
+    textTransform: 'uppercase',
     color: t.colors.primaryContainer,
     textShadowColor: 'rgba(0, 0, 0, 0.05)',
     textShadowOffset: { width: 0, height: 1 },

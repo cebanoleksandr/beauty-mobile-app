@@ -210,7 +210,7 @@
   },
   "common": {
     "back": "Назад",
-    "brand": "Masters",
+    "brand": "Slotsy",
     "cancel": "Скасувати",
     "close": "Закрити",
     "help": "Допомога",
@@ -591,7 +591,7 @@
     "noMasterText": "Налаштуйте профіль майстра й додайте послугу, щоб користуватися режимом майстра.",
     "noMasterTitle": "Профілю майстра ще немає",
     "notifications": "Сповіщення",
-    "notificationsOff": "Запустіть бота Slotly в Telegram, щоб отримувати оновлення записів",
+    "notificationsOff": "Запустіть бота Slotsy в Telegram, щоб отримувати оновлення записів",
     "notificationsOn": "Оновлення записів надходять у ваш чат Telegram",
     "off": "Вимк.",
     "on": "Увімк.",

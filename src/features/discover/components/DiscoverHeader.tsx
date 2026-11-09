@@ -1,9 +1,12 @@
-/** Top app bar over the map. Figma node 7:620 (logo, wordmark, notifications). */
+/**
+ * Top app bar of the tab screens. Figma node 7:620 (logo, wordmark, notifications);
+ * the logo is the app icon (assets/icon, scripts/generate-app-icons.py).
+ */
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BellIcon from '../../../assets/icons/bell.svg';
-import LogoIcon from '../../../assets/icons/logo.svg';
+import AppLogo from '../../../assets/icons/app-logo.svg';
 import { useTranslation } from '../../../i18n';
 import { makeStyles } from '../../../theme';
 
@@ -17,7 +20,7 @@ export function DiscoverHeader({ onNotifications }: { onNotifications?: () => vo
     <View style={[styles.bar, { paddingTop: insets.top, height: HEADER_HEIGHT + insets.top }]}>
       <View style={styles.brand}>
         <View style={styles.logo}>
-          <LogoIcon />
+          <AppLogo />
         </View>
         <Text style={styles.wordmark}>{t('common.brand')}</Text>
       </View>
@@ -48,16 +51,12 @@ const useStyles = makeStyles(t => ({
     alignItems: 'center',
     gap: t.spacing.md,
   },
+  // The icon's own rounded square (rx 120/512 of 32 pt), outlined so it reads on the dark chrome.
   logo: {
-    width: 32,
-    height: 32,
-    borderRadius: t.radii.full,
+    borderRadius: 7.5,
     borderWidth: t.borderWidth.thin,
-    borderColor: 'rgba(232, 180, 160, 0.4)',
-    backgroundColor: t.colors.buttonNeutral,
-    boxShadow: '0px 0px 0px 1px #353438',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: 'rgba(232, 180, 160, 0.3)',
+    overflow: 'hidden',
   },
   wordmark: {
     fontFamily: t.fontFamily.bold,

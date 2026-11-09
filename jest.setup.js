@@ -15,9 +15,19 @@ jest.mock('@maplibre/maplibre-react-native', () => {
   };
   return {
     Map: passthrough('Map'),
-    Camera: passthrough('Camera'),
+    Camera: (() => {
+      // The real CameraRef exposes imperative camera moves.
+      const C = React.forwardRef((props, ref) => {
+        React.useImperativeHandle(ref, () => ({ fitBounds: jest.fn(), zoomTo: jest.fn(), easeTo: jest.fn() }));
+        return React.createElement(View, props);
+      });
+      C.displayName = 'Camera';
+      return C;
+    })(),
     Marker: passthrough('Marker'),
     UserLocation: passthrough('UserLocation'),
+    GeoJSONSource: passthrough('GeoJSONSource'),
+    Layer: passthrough('Layer'),
     LocationManager: {
       requestPermissions: jest.fn(async () => false),
       getCurrentPosition: jest.fn(async () => undefined),

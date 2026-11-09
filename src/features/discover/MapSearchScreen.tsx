@@ -2,14 +2,24 @@
  * Map search ("Discover"). Figma: Masters → node 7:323, with product changes:
  * no quick-filter chips under the input (they live behind the filter button),
  * and cards follow the product screenshot (vertical cards).
+ *
+ * Search area works like the web app (features/discover/MasterMap): the
+ * search center is the user's location, or a point tapped on the map (marked
+ * with a pin); the filter radius is drawn as a circle around it (solid outline: MapLibre
+ * didn't render `line-dasharray` on the Android emulator).
+ * Panning / zooming only moves the camera and never refetches. A center from
+ * geolocation frames the whole circle; a tapped center leaves the camera.
  */
 import {
   Camera,
+  GeoJSONSource,
+  Layer,
   Map,
   Marker,
   UserLocation,
   type CameraRef,
   type LngLat,
+  type PressEvent,
   type ViewStateChangeEvent,
 } from '@maplibre/maplibre-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -19,16 +29,16 @@ import type { MasterCardDto } from '../../api';
 import { useMasterSearch } from '../../query';
 import { useDebouncedValue } from '../../shared/useDebouncedValue';
 import { useTranslation } from '../../i18n';
-import { makeStyles } from '../../theme';
+import { makeStyles, useTheme } from '../../theme';
 import { favoritesStore, useFavoriteIds } from '../favorites/favoritesStore';
 import { DiscoverHeader, HEADER_HEIGHT } from './components/DiscoverHeader';
 import { FiltersSheet } from './components/FiltersSheet';
 import { MapControls } from './components/MapControls';
 import { MapPin } from './components/MapPin';
 import { MastersSheet, type MastersSheetRef } from './components/MastersSheet';
-import { SearchAreaButton } from './components/SearchAreaButton';
+import { SearchCenterPin } from './components/SearchCenterPin';
 import { SearchBar } from './components/SearchBar';
-import { distanceMeters } from './geo';
+import { circleBounds, circlePolygon } from './geo';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, MAP_STYLES, MAX_ZOOM, MIN_ZOOM, type MapStyleName } from './mapConfig';
 import {
   DEFAULT_FILTERS,
@@ -42,6 +52,9 @@ import { useUserLocation } from './useUserLocation';
 /** Height of the collapsed results sheet — map ornaments sit above it. */
 const SHEET_OVERLAP = 330;
 
+/** Where the search center came from: device location, a map tap, or the Kyiv fallback. */
+type CenterSource = 'default' | 'geo' | 'manual';
+
 interface MapSearchScreenProps {
   /** Opens a master's profile (wired to navigation by the tab route). */
   onOpenMaster?: (master: MasterCardDto) => void;
@@ -49,22 +62,24 @@ interface MapSearchScreenProps {
 
 export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
   const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraRef>(null);
   const sheetRef = useRef<MastersSheetRef>(null);
   const zoomRef = useRef(DEFAULT_ZOOM);
-  const mapCenterRef = useRef<LngLat>(DEFAULT_CENTER);
 
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query.trim(), 400);
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchCenter, setSearchCenter] = useState<LngLat>(DEFAULT_CENTER);
-  const [areaDirty, setAreaDirty] = useState(false);
+  const [centerSource, setCenterSource] = useState<CenterSource>('default');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [mapStyle, setMapStyle] = useState<MapStyleName>('dark');
   const [listMode, setListMode] = useState(false);
+  // Camera moves are ignored until the native map has loaded its style.
+  const [mapReady, setMapReady] = useState(false);
 
   const favoriteIds = useFavoriteIds();
   const { granted: locationGranted, locate } = useUserLocation();
@@ -81,42 +96,47 @@ export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
     [search.data, filters, favoriteIds],
   );
 
-  const flyTo = useCallback((center: LngLat, zoom?: number) => {
-    cameraRef.current?.easeTo({ center, zoom: zoom ?? zoomRef.current, duration: 500 });
-  }, []);
+  const searchArea = useMemo(
+    () => circlePolygon(searchCenter, filters.radiusMeters),
+    [searchCenter, filters.radiusMeters],
+  );
 
   const goToUser = useCallback(async () => {
     const position = await locate();
     if (!position) return false;
     setSearchCenter(position);
-    setAreaDirty(false);
-    flyTo(position, Math.max(zoomRef.current, DEFAULT_ZOOM));
+    setCenterSource('geo');
     return true;
-  }, [locate, flyTo]);
+  }, [locate]);
 
   // Center on the user once on open (falls back to Kyiv if denied).
   useEffect(() => {
     goToUser();
   }, [goToUser]);
 
-  const onRegionDidChange = useCallback(
-    (e: NativeSyntheticEvent<ViewStateChangeEvent>) => {
-      const { center, zoom, userInteraction } = e.nativeEvent;
-      zoomRef.current = zoom;
-      mapCenterRef.current = center;
-      // Offer "Search this area" once the user pans noticeably away.
-      if (userInteraction && distanceMeters(center, searchCenter) > filters.radiusMeters * 0.25) {
-        setAreaDirty(true);
-      }
-    },
-    [searchCenter, filters.radiusMeters],
-  );
+  // A center from geolocation (first fix, the locate button) or a new radius
+  // around it frames the whole search circle. A tapped center doesn't move the
+  // camera — the user is already looking there.
+  const headerBottom = insets.top + HEADER_HEIGHT + 12 + 50;
+  useEffect(() => {
+    if (!mapReady || centerSource === 'manual') return;
+    cameraRef.current?.fitBounds(circleBounds(searchCenter, filters.radiusMeters), {
+      padding: { top: headerBottom + 24, bottom: SHEET_OVERLAP + 24, left: 24, right: 24 },
+      duration: 600,
+    });
+  }, [mapReady, searchCenter, centerSource, filters.radiusMeters, headerBottom]);
 
-  const searchThisArea = () => {
-    setSearchCenter(mapCenterRef.current);
-    setAreaDirty(false);
+  const onRegionDidChange = useCallback((e: NativeSyntheticEvent<ViewStateChangeEvent>) => {
+    zoomRef.current = e.nativeEvent.zoom;
+  }, []);
+
+  // Tap on empty map (marker taps don't reach here) → new search center.
+  const onMapPress = useCallback((e: NativeSyntheticEvent<PressEvent>) => {
+    Keyboard.dismiss();
     setSelectedId(null);
-  };
+    setSearchCenter(e.nativeEvent.lngLat);
+    setCenterSource('manual');
+  }, []);
 
   const onLocatePress = async () => {
     const ok = await goToUser();
@@ -147,7 +167,7 @@ export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
     [onOpenMaster],
   );
 
-  const controlsTop = insets.top + HEADER_HEIGHT + 12 + 50 + 16;
+  const controlsTop = headerBottom + 16;
 
   return (
     <View style={styles.screen}>
@@ -159,10 +179,8 @@ export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
         attribution
         attributionPosition={{ bottom: SHEET_OVERLAP + 8, left: 8 }}
         onRegionDidChange={onRegionDidChange}
-        onPress={() => {
-          Keyboard.dismiss();
-          setSelectedId(null);
-        }}
+        onPress={onMapPress}
+        onDidFinishLoadingMap={() => setMapReady(true)}
       >
         <Camera
           ref={cameraRef}
@@ -170,7 +188,20 @@ export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
           minZoom={MIN_ZOOM}
           maxZoom={MAX_ZOOM}
         />
+        <GeoJSONSource id="search-area" data={searchArea}>
+          <Layer type="fill" id="search-area-fill" paint={{ 'fill-color': colors.primary, 'fill-opacity': 0.06 }} />
+          <Layer
+            type="line"
+            id="search-area-line"
+            paint={{ 'line-color': colors.primary, 'line-width': 2, 'line-opacity': 0.8 }}
+          />
+        </GeoJSONSource>
         {locationGranted && <UserLocation />}
+        {centerSource === 'manual' && (
+          <Marker id="search-center" lngLat={searchCenter} anchor="bottom">
+            <SearchCenterPin />
+          </Marker>
+        )}
         {masters.map(master => (
           <Marker
             key={master.pinId}
@@ -193,11 +224,6 @@ export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
           activeFilters={countActiveFilters(filters)}
           style={styles.searchBar}
         />
-        {areaDirty && !listMode && (
-          <View style={styles.searchArea} pointerEvents="box-none">
-            <SearchAreaButton onPress={searchThisArea} loading={search.isFetching} />
-          </View>
-        )}
       </View>
 
       {!listMode && (
@@ -249,7 +275,7 @@ export function MapSearchScreen({ onOpenMaster }: MapSearchScreenProps) {
 const useStyles = makeStyles(t => ({
   screen: {
     flex: 1,
-    backgroundColor: '#0C0D10',
+    backgroundColor: t.colors.background,
   },
   map: {
     position: 'absolute',
@@ -267,10 +293,6 @@ const useStyles = makeStyles(t => ({
   searchBar: {
     paddingTop: t.spacing.md,
     paddingHorizontal: t.spacing.lg,
-  },
-  searchArea: {
-    marginTop: t.spacing.md,
-    alignItems: 'center',
   },
   controls: {
     position: 'absolute',

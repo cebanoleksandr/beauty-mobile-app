@@ -274,7 +274,6 @@
       "filtersActive": "Filters, {count} active",
       "placeholder": "Search masters or services"
     },
-    "searchArea": "Search this area",
     "sheet": {
       "empty": "No masters here yet. Try moving the map or changing filters.",
       "found": "({count} found)",

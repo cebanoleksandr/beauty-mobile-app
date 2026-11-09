@@ -4,16 +4,19 @@
  * (hook + imperative singleton), same pattern as the web app's tokenStore, so
  * non-React code (the HTTP client, the 401 handler) can read it too.
  *
- * Persisted in AsyncStorage so the user stays signed in across launches; the
- * server keeps the session alive for 90 days of inactivity. Call `hydrate()`
- * once at startup before deciding between Login and the app.
+ * Persisted in the iOS Keychain / Android Keystore (`secureSessionStorage`)
+ * so the user stays signed in across launches; the server keeps the session
+ * alive for 90 days of inactivity. Call `hydrate()` once at startup before
+ * deciding between Login and the app.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
+import { secureSessionStorage } from './secureSessionStorage';
 
 type Listener = () => void;
 
-const STORAGE_KEY = 'slotly.session.v1';
+/** Where earlier builds kept the token in plain AsyncStorage — migrated once, then deleted. */
+const LEGACY_STORAGE_KEY = 'slotly.session.v1';
 
 let token: string | null = null;
 let hydrated = false;
@@ -25,9 +28,20 @@ function emit() {
 }
 
 function persist(value: string | null) {
-  (value ? AsyncStorage.setItem(STORAGE_KEY, value) : AsyncStorage.removeItem(STORAGE_KEY)).catch(() => {
+  (value ? secureSessionStorage.set(value) : secureSessionStorage.clear()).catch(() => {
     // Storage failure only costs a re-login on next launch.
   });
+}
+
+/** Saved token: the secure store, else a legacy AsyncStorage copy (moved into the secure store). */
+async function loadSaved(): Promise<string | null> {
+  const secure = await secureSessionStorage.get().catch(() => null);
+  const legacy = await AsyncStorage.getItem(LEGACY_STORAGE_KEY).catch(() => null);
+  if (legacy !== null) {
+    if (!secure) await secureSessionStorage.set(legacy).catch(() => {});
+    await AsyncStorage.removeItem(LEGACY_STORAGE_KEY).catch(() => {});
+  }
+  return secure ?? legacy;
 }
 
 export const sessionStore = {
@@ -46,7 +60,7 @@ export const sessionStore = {
   },
   /** Loads the saved session (once). */
   hydrate(): Promise<void> {
-    hydrating ??= AsyncStorage.getItem(STORAGE_KEY)
+    hydrating ??= loadSaved()
       .then(saved => {
         // A sign-in that finished while we were reading wins.
         if (token === null && saved) token = saved;

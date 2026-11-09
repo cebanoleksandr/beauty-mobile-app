@@ -27,3 +27,19 @@ jest.mock('@maplibre/maplibre-react-native', () => {
 
 // Tests assert the English copy; the app itself follows the device language.
 require('./src/i18n').i18n.changeLanguage('en');
+
+// In-memory Keychain/Keystore (react-native-keychain is a native module).
+jest.mock('react-native-keychain', () => {
+  const store = new Map();
+  return {
+    ACCESSIBLE: { AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 'AccessibleAfterFirstUnlockThisDeviceOnly' },
+    STORAGE_TYPE: { AES_GCM_NO_AUTH: 'KeystoreAESGCM_NoAuth' },
+    __store: store,
+    setGenericPassword: jest.fn(async (username, password, options = {}) => {
+      store.set(options.service ?? 'default', { username, password, service: options.service });
+      return { service: options.service, storage: 'mock' };
+    }),
+    getGenericPassword: jest.fn(async (options = {}) => store.get(options.service ?? 'default') ?? false),
+    resetGenericPassword: jest.fn(async (options = {}) => store.delete(options.service ?? 'default')),
+  };
+});

@@ -450,7 +450,7 @@ const useStyles = makeStyles(t => ({
   flex: { flex: 1 },
   screen: {
     flex: 1,
-    backgroundColor: '#131316',
+    backgroundColor: t.colors.background,
   },
   center: {
     flex: 1,
@@ -463,7 +463,7 @@ const useStyles = makeStyles(t => ({
   header: {
     borderBottomWidth: t.borderWidth.thin,
     borderBottomColor: 'rgba(255, 255, 255, 0.04)',
-    backgroundColor: 'rgba(19, 19, 22, 0.85)',
+    backgroundColor: t.colors.chrome,
   },
   headerTitle: {
     height: 56,

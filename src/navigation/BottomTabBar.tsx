@@ -78,9 +78,8 @@ const useStyles = makeStyles(t => ({
     flexDirection: 'row',
     paddingTop: t.spacing.sm,
     paddingHorizontal: t.spacing.lg,
+    // Figma 7:630: rgba(14,14,17,0.85) + upward shadow, no top border.
     backgroundColor: t.colors.chrome,
-    borderTopWidth: t.borderWidth.thin,
-    borderTopColor: 'rgba(81, 68, 63, 0.2)',
     boxShadow: '0px -4px 24px 0px rgba(0, 0, 0, 0.4)',
   },
   item: {

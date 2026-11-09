@@ -40,7 +40,8 @@ const useStyles = makeStyles(t => ({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: t.spacing.xl,
-    backgroundColor: 'rgba(19, 19, 22, 0.8)',
+    // Same chrome as the bottom nav (Figma 7:630) — blends into the #0E0E11 screen background.
+    backgroundColor: t.colors.chrome,
   },
   brand: {
     flexDirection: 'row',

@@ -82,6 +82,16 @@ You've successfully run and modified your React Native App. :partying_face:
 - If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
 - If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
 
+# App icon
+
+The launcher icon is the web app's "slots" logo (`frontend/public/logo.svg`) in this app's palette. The source is
+`assets/icon/app-icon.svg`; all Android mipmaps (legacy, round, adaptive foreground/monochrome) and the iOS AppIcon set
+are generated from it with ImageMagick:
+
+```sh
+python3 scripts/generate-app-icons.py
+```
+
 # Troubleshooting
 
 If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.

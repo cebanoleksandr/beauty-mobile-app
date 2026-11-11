@@ -82,6 +82,24 @@ You've successfully run and modified your React Native App. :partying_face:
 - If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
 - If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
 
+# Android APK for a real phone
+
+A phone can't reach the dev backend at `10.0.2.2:8080` (that's the emulator's view of this machine), so set the backend
+URL at build time — it is inlined into the bundle (`SLOTSY_API_URL`, see `src/api/config.ts`):
+
+```sh
+# the dev ngrok tunnel (PUBLIC_BASE_URL in ../.env), or the production API domain
+export SLOTSY_API_URL=https://your-tunnel.ngrok-free.dev
+cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a
+# → android/app/build/outputs/apk/release/app-release.apk
+```
+
+Notes:
+- Over the ngrok tunnel the Vite dev server proxies `/api` (not `/ws`), so live updates fall back to 20 s polling.
+- The release build is still signed with the debug keystore (fine for sideloading). Generate a real keystore before
+  publishing: https://reactnative.dev/docs/signed-apk-android.
+- Drop `-PreactNativeArchitectures=…` to build for every ABI (slower).
+
 # App icon
 
 The launcher icon is the web app's "slots" logo (`frontend/public/logo.svg`) in this app's palette. The source is

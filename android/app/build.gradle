@@ -41,7 +41,10 @@ react {
     //
     //   A list of extra flags to pass to the 'bundle' commands.
     //   See https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
-    // extraPackagerArgs = []
+    // Fresh Metro transform for every bundled build: build-time env (SLOTSY_API_URL,
+    // inlined by babel) isn't part of Metro's cache key, so a cached module could
+    // keep an old API URL.
+    extraPackagerArgs = ["--reset-cache"]
 
     /* Hermes Commands */
     //   The hermes compiler command to run. By default it is 'hermesc'
